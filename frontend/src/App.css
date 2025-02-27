@@ -1,0 +1,71 @@
+.profile::-webkit-scrollbar{
+    width: 6px;
+}
+.profile::-webkit-scrollbar-thumb{
+    background: #dbd9d9;
+    border-radius: 10px;
+}
+
+.sidebar .active{
+    background-color: #2A3439;
+    border-radius: 30px;
+}
+.spinner {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: 9px solid #303035;
+    animation: spinner-bulqg1 0.8s infinite linear alternate,
+      spinner-oaa3wk 1.6s infinite linear;
+  }
+
+  .custom-checkbox {
+    position: relative;
+    width: 20px;
+    height: 20px;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    border: 2px solid #ccc;
+    border-radius: 3px;
+    background-color: white;
+    cursor: pointer;
+  }
+  
+  /* Custom checkbox background and tick */
+  .custom-checkbox:checked {
+    background-color: #000; /* Background color when checked */
+    border: none;
+  }
+  
+  .custom-checkbox:checked::after {
+    content: '\2713'; /* Unicode for checkmark */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 16px;
+    color: white; /* Tick color */
+  }
+
+  .carousel-container {
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+  }
+  
+  .carousel-inner {
+    display: flex;
+    transition: transform 0.5s ease;
+  }
+  
+  .carousel-item {
+    min-width: 300px; /* Adjust based on your item width */
+    margin-right: 10px; /* Space between items */
+    background-color: #eee; /* Example background color */
+    padding: 20px;
+    box-sizing: border-box;
+  }
+  
+ 
+  
