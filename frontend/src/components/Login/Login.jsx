@@ -24,12 +24,12 @@ const Login = () => {
     <div className="w-screen h-screen flex justify-center items-start">
       <img src={authImage} alt="signin" className="h-full w-auto hidden md:hidden lg:block xl:block" />
       <div className="flex flex-col gap-[6vh] shadow-2xl h-full w-full pt-[10vh] px-[5vw]">
-      <Link to={'/'}>
+      {/* <Link to={'/'}>
         <h1 className="text-4xl font-bold text-white flex justify-start items-center">
           <LiaFreeCodeCamp className="text-[50px] mr-1" />
           Code<span className="text-glod-color">Gyaan.</span>
         </h1>
-        </Link>
+        </Link> */}
         <div className="flex flex-col justify-start gap-[2vh]">
           <h1 className="text-white text-2xl font-bold">
             Get Onboard and jumpstart your career!

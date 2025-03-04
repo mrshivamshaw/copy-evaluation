@@ -90,7 +90,7 @@ export const isStudent = async (req,res,next) => {
         
         const userType = await user.findById(userId,'accountType');
         // console.log(userType);
-            if(userType.accountType !== "Student"){
+            if(userType.accountType !== "student"){
             req["user"] = userId;
             return res.status(400).json({
                 success:false,
@@ -109,14 +109,14 @@ export const isStudent = async (req,res,next) => {
 
 
 
-export const isInstructor = async (req,res,next) => { 
+export const isTeacher = async (req,res,next) => { 
     try {
         const {id} = req.body;
         const userType = await user.findById(id,'accountType');
-        if(userType.accountType !== "Instructor"){
+        if(userType.accountType !== ""){
             return res.status(400).json({
                 success:false,
-                message:"This is protected route for Instructor"
+                message:"This is protected route for Teacher"
             })
         }
         next()

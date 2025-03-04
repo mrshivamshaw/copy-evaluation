@@ -41,7 +41,7 @@ const userSchema =  mongoose.Schema({
     accountType:{
         type:String,
         required:true,
-        enum:["Instructor","Student","Admin"]
+        enum:["teacher","student","admin"]
     },
     additionalDetails:{
         type:mongoose.Schema.Types.ObjectId,

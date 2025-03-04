@@ -18,7 +18,7 @@ export const login = (email, password, navigate) => {
         dispatch(setAccountType(res?.data?.user?.accountType))
         toast.success("Login Successful");
         dispatch(setLoading(false));
-        navigate("/");
+        res?.data?.user?.accountType == "admin" ? navigate('/admin/dashboard') :  res?.data?.user?.accountType == "teacher" ? navigate('/teacher/dashboard') : navigate('/student/dashboard')
         return true
     } catch (error) {
         toast.error(error?.response?.data?.message);
