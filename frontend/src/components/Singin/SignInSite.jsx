@@ -62,10 +62,10 @@ const SignInSite = () => {
           </h1>
         </Link> */}
         <div className="flex flex-col justify-start gap-[2vh]">
-          <h1 className="text-white text-2xl font-bold">
+          <h1 className="text-black text-2xl font-bold">
             Get Onboard and jumpstart your career!
           </h1>
-          <p className="text-sm text-white/80">
+          <p className="text-sm text-black/80">
             Please enter your details to signup
           </p>
           <div>
@@ -78,7 +78,7 @@ const SignInSite = () => {
                   onClick={() => setChangeFiled({ ...changeFiled, accountType: "student" })}
                   className={
                     changeFiled.accountType === "student"
-                      ? "cursor-pointer text-lg bg-glod-color text-white px-3 py-1 rounded-3xl font-semibold"
+                      ? "cursor-pointer text-lg bg-blue-800 text-white px-3 py-1 rounded-3xl font-semibold"
                       : "text-lg cursor-pointer text-white px-3 py-1 rounded-3xl font-semibold"
                   }
                 >
@@ -88,7 +88,7 @@ const SignInSite = () => {
                   onClick={() => setChangeFiled({...changeFiled,accountType: "teacher"})}
                   className={
                     changeFiled.accountType === "teacher"
-                      ? "cursor-pointer text-lg bg-glod-color text-white px-3 py-1 rounded-3xl font-semibold"
+                      ? "cursor-pointer text-lg bg-blue-800 text-white px-3 py-1 rounded-3xl font-semibold"
                       : "text-lg cursor-pointer  text-white px-3 py-1 rounded-3xl font-semibold"
                   }
                 >
@@ -101,8 +101,8 @@ const SignInSite = () => {
                     htmlFor="first"
                     className={
                       firstName
-                        ? "text-white font-medium text-sm block"
-                        : "text-white font-medium text-sm hidden"
+                        ? "text-black font-medium text-sm block"
+                        : "text-black font-medium text-sm hidden"
                     }
                   >
                     First name
@@ -114,7 +114,7 @@ const SignInSite = () => {
                     value={changeFiled.firstName}
                     className="text-black rounded-lg px-4 py-1"
                     style={{
-                      borderBottom: "1px solid white",
+                      borderBottom: "1px solid black",
                     }}
                     placeholder="Enter your Fisrt name"
                     onFocus={() => setFirstName(true)}
@@ -141,7 +141,7 @@ const SignInSite = () => {
                     onChange={(e) => changeHandler(e)}
                     className="text-black rounded-lg px-4 py-1"
                     style={{
-                      borderBottom: "1px solid white",
+                      borderBottom: "1px solid black",
                     }}
                     placeholder="Enter your Last name"
                     onFocus={() => setLastName(true)}
@@ -169,7 +169,7 @@ const SignInSite = () => {
                     onChange={(e) => changeHandler(e)}
                     className="text-black rounded-lg px-4 py-1"
                     style={{
-                      borderBottom: "1px solid white",
+                      borderBottom: "1px solid black",
                     }}
                     placeholder="Enter your email"
                     onFocus={() => setEmail(true)}
@@ -197,8 +197,8 @@ const SignInSite = () => {
                     htmlFor="pass"
                     className={
                       pass
-                        ? "text-white font-medium text-sm block w-full"
-                        : "text-white font-medium text-sm hidden w-full"
+                        ? "text-black font-medium text-sm block w-full"
+                        : "text-black font-medium text-sm hidden w-full"
                     }
                   >
                     Password
@@ -211,7 +211,7 @@ const SignInSite = () => {
                     onChange={(e) => changeHandler(e)}
                     className="text-black rounded-lg px-4 py-1 w-[90%]"
                     style={{
-                      borderBottom: "1px solid white",
+                      borderBottom: "1px solid black",
                     }}
                     placeholder="Enter your Password"
                     onFocus={() => setPass(true)}
@@ -223,8 +223,8 @@ const SignInSite = () => {
                     htmlFor="conpass"
                     className={
                       conPass
-                        ? "text-white font-medium text-sm block"
-                        : "text-white font-medium text-sm hidden"
+                        ? "text-black font-medium text-sm block"
+                        : "text-black font-medium text-sm hidden"
                     }
                   >
                     Confirm Password
@@ -237,7 +237,7 @@ const SignInSite = () => {
                     onChange={(e) => changeHandler(e)}
                     className="text-black rounded-lg px-4 py-1 w-[90%] "
                     style={{
-                      borderBottom: "1px solid white",
+                      borderBottom: "1px solid black",
                     }}
                     placeholder="Confirm your password"
                     onFocus={() => setConPass(true)}
@@ -248,14 +248,14 @@ const SignInSite = () => {
               <div>
                 <button
                   type="submit"
-                  className="bg-glod-color w-full text-center py-2 font-semibold rounded-md text-[#fff] hover:bg-[#b99b55]"
+                  className="bg-blue-800 w-full text-center py-2 font-semibold rounded-md text-[#fff] hover:bg-blue-700"
                 >
                   Sign up
                 </button>
-                <div className="w-full text-end text-white text-sm">
+                <div className="w-full text-end text-black text-sm">
                   Existing user?{" "}
                   <Link to="/login">
-                    <span className="text-amber-300">Login</span>
+                    <span className="text-blue-800">Login</span>
                   </Link>
                 </div>
               </div>{" "}

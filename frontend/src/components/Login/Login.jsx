@@ -31,16 +31,16 @@ const Login = () => {
         </h1>
         </Link> */}
         <div className="flex flex-col justify-start gap-[2vh]">
-          <h1 className="text-white text-2xl font-bold">
+          <h1 className="text-black text-2xl font-bold">
             Get Onboard and jumpstart your career!
           </h1>
-          <p className="text-sm text-white/80">
+          <p className="text-sm text-black/80">
             Please enter your email and password to login
           </p>
           <div>
             <form onSubmit={formSubmitHandler} className="flex flex-col gap-[3vh]">
               <div className="flex flex-col">
-              {isEmailFocused && <label htmlFor="email" className="text-white font-medium ">
+              {isEmailFocused && <label htmlFor="email" className="text-black font-medium ">
                   Email
                 </label>}
                 <input
@@ -49,7 +49,7 @@ const Login = () => {
                   className="text-black rounded-lg px-4 py-1"
                   style={{
                     borderBottom:`${
-                      isEmailFocused ? "2px solid white " : "1px solid white"
+                      isEmailFocused ? "2px solid black " : "1px solid black"
                     }`,
                   }}
                   onFocus={() => setIsEmailFocused(true)}
@@ -59,7 +59,7 @@ const Login = () => {
                 />
               </div>
               <div className="flex flex-col">
-                { isPasswordFocused && <label htmlFor="pass" className="text-white font-medium ">
+                { isPasswordFocused && <label htmlFor="pass" className="text-black font-medium ">
                   Password
                 </label>}
                 <input
@@ -68,7 +68,7 @@ const Login = () => {
                   className="text-black rounded-lg px-4 py-1"
                   style={{
                     borderBottom: `${
-                      isPasswordFocused ? "2px solid white" : "1px solid white"
+                      isPasswordFocused ? "2px solid black" : "1px solid black"
                     }`,
                   }}
                   onFocus={() => setIsPasswordFocused(true)}
@@ -78,8 +78,8 @@ const Login = () => {
                 />
               </div>
               <div>
-              <button className="bg-glod-color w-full text-center py-2 font-semibold rounded-md text-[#fff] hover:bg-[#b99b55]">Login</button>
-                  <div className="w-full text-end text-white text-sm">New user? <Link to='/signin'><span className="text-amber-300">Signup</span></Link></div>
+              <button className="bg-blue-800 w-full text-center py-2 font-semibold rounded-md text-[#fff] hover:bg-blue-700">Login</button>
+                  <div className="w-full text-end text-black text-sm">New user? <Link to='/signin'><span className="text-blue-800">Signup</span></Link></div>
               </div>
               {/* <div className="w-full text-white text-lg font-light text-center">OR</div>
               <button className="bg-white w-full text-center py-2 font-semibold rounded-md text-black">Signin with Google</button> */}

@@ -17,7 +17,7 @@ function App() {
   const { loading } = useSelector((state) => state.ui);
 
   return (
-    <div className="max-w-[100vw] min-h-[100vh] overflow-x-hidden box-border relative z-10 bg-blue-bg">
+    <div className="max-w-[100vw] min-h-[100vh] overflow-x-hidden box-border relative z-10">
       {loading && <Loader />}
       <Routes>
       <Route path="/" element={<Navigate to="/login" />} />
