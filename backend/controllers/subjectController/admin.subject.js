@@ -100,6 +100,13 @@ export const updateSubject = async(req,res) => {
 export const assignTeacherToSubject = async(req,res) => {
     try {
         const {id,email} = req.body
+        
+        if(!id || !email){
+            return res.status(400).json({
+                message : "All fields required",
+                success : false
+            })
+        }
 
         //check teacher exist or not
         const teacher = await User.findOne({email:email});
@@ -128,6 +135,78 @@ export const assignTeacherToSubject = async(req,res) => {
         return res.status(400).json({
             success:false,
             message:"Subject not assigned",
+        })
+    }
+}
+
+
+export const fetchAssingedTeacher = async(req,res) => {
+    try {
+        const assignedTeacher = await Subject.find({ teacherAssigned: { $exists: true, $not: { $size: 0 } } }).populate("teacherAssigned");
+
+
+        return res.status(200).json({
+            message : "Assigned Teaher fetched successfully",
+            success : true,
+            data : assignedTeacher
+        })
+    } catch (error) {
+        console.log("Error while fetching Assigned Teacher : ",error);
+        return res.status(400).json({
+            success:false,
+            message:"Error while fetching Assigned Teacher",
+        })
+    }
+}
+
+export const removeAssignedTecher = async(req,res) => {
+    try {
+        const {id,email} = req.body;
+
+        if(!id){
+            return res.status(400).json({
+                message : "All fields required",
+                success : false
+            })
+        }
+
+        //check subject exist or not
+        const sub = await Subject.findOne({_id:id});
+        if(!sub){
+            return res.status(400).json({
+                message : "Subject not fount",
+                success : false
+            })
+        }
+
+        //check teacher exist or not
+        const teacher = await User.findOne({email:email});
+        if(!teacher){
+            return res.status(400).json({
+                message : "Teacher not fount",
+                success : false
+            })
+        }
+        const updatedSub = sub?.teacherAssigned?.filter(s => s._id.toString() !== teacher?._id.toString());
+
+        // Remove teacher from subject
+        const updateSub = await Subject.findByIdAndUpdate(
+            sub._id,  // Ensure you're updating the correct subject ID
+            { teacherAssigned: updatedSub }, 
+            { new: true }
+        );
+
+        return res.status(200).json({
+            message : "Assigned Teaher removed successfully",
+            success : true,
+        }) 
+
+
+    } catch (error) {
+        console.log("Error while removing Assigned Teacher : ",error);
+        return res.status(400).json({
+            success:false,
+            message:"Error while removing Assigned Teacher",
         })
     }
 }
