@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { mongo } from "mongoose";
 
 const EvaluationSchema = mongoose.Schema({
     // Teacher who is conducting the evaluation
@@ -13,6 +13,13 @@ const EvaluationSchema = mongoose.Schema({
         type: Number,
         default: 0,
         min: 0
+    },
+
+    //evaluated for
+    evaluatedFor: {
+        type : mongoose.Schema.Types.ObjectId,
+        ref : "User",
+        required : true,
     },
 
     // Maximum possible marks

@@ -18,7 +18,8 @@ const submissionSchema = mongoose.Schema({
     evaluated : {
         type : String,
         required : true,
-        enum : ["pending","completed"]
+        enum : ["pending","completed"],
+        default : "pending"
     }
 })
 

@@ -12,6 +12,7 @@ import AdminDashboard from "./pages/admin/Dashboard";
 import StudentDashboard from "./pages/student/Dashboard";
 import TeacherDashboard from "./pages/teacher/Dashboard";
 import  EvaluatePage from "./pages/teacher/Evaluate";
+import SubjectSubmissionsPage from "./pages/teacher/SubjectSubmissionsPage";
 
 function App() {
   const { loading } = useSelector((state) => state.ui);
@@ -51,6 +52,14 @@ function App() {
           element={
             <ProtectedRoute>
               <TeacherDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/teacher/subject/:id"
+          element={
+            <ProtectedRoute>
+              <SubjectSubmissionsPage />
             </ProtectedRoute>
           }
         />

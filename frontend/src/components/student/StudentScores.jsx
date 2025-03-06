@@ -1,0 +1,171 @@
+import React from "react"
+
+import { useState } from "react"
+
+// Mock data for student scores
+const mockScores = [
+  {
+    id: "1",
+    code: "PCC-CS404",
+    name: "Design and Analysis of Algorithm",
+    semester: "4",
+    score: 85,
+    maxScore: 100,
+    evaluatedAt: "2025-03-01T14:30:00Z",
+    feedback: "Good understanding of algorithms. Work on time complexity analysis.",
+  },
+  {
+    id: "2",
+    code: "PCC-CS405",
+    name: "Operating Systems",
+    semester: "4",
+    score: 78,
+    maxScore: 100,
+    evaluatedAt: "2025-03-02T10:15:00Z",
+    feedback: "Decent work on process management concepts. Need improvement in memory management.",
+  },
+  {
+    id: "3",
+    code: "PCC-CS406",
+    name: "Database Management Systems",
+    semester: "4",
+    score: 92,
+    maxScore: 100,
+    evaluatedAt: "2025-03-03T16:45:00Z",
+    feedback: "Excellent work on SQL queries and normalization concepts.",
+  },
+]
+
+export default function StudentScores() {
+  const [scores] = useState(mockScores)
+  const [expandedFeedback, setExpandedFeedback] = useState(null)
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })
+  }
+
+  const getScoreColor = (score) => {
+    if (score >= 90) return "text-green-600"
+    if (score >= 75) return "text-blue-600"
+    if (score >= 60) return "text-yellow-600"
+    return "text-red-600"
+  }
+
+  const toggleFeedback = (id) => {
+    if (expandedFeedback === id) {
+      setExpandedFeedback(null)
+    } else {
+      setExpandedFeedback(id)
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-lg border bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-semibold mb-4">My Scores</h2>
+
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                >
+                  Subject
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                >
+                  Code
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                >
+                  Score
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                >
+                  Evaluated On
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                >
+                  Feedback
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200 bg-white">
+              {scores.map((score) => (
+                <React.Fragment key={score.id}>
+                  <tr className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{score.name}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{score.code}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <span className={`${getScoreColor(score.score)}`}>
+                        {score.score}/{score.maxScore}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {formatDate(score.evaluatedAt)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <button onClick={() => toggleFeedback(score.id)} className="text-blue-600 hover:text-blue-800">
+                        {expandedFeedback === score.id ? "Hide Feedback" : "View Feedback"}
+                      </button>
+                    </td>
+                  </tr>
+                  {expandedFeedback === score.id && (
+                    <tr className="bg-blue-50">
+                      <td colSpan={5} className="px-6 py-4 text-sm text-gray-700">
+                        <div className="font-medium mb-1">Teacher's Feedback:</div>
+                        <p>{score.feedback}</p>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="rounded-lg border bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-semibold mb-4">Performance Summary</h2>
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="rounded-lg border p-4 bg-blue-50">
+            <div className="text-sm text-gray-500 mb-1">Average Score</div>
+            <div className="text-2xl font-bold text-blue-700">
+              {(scores.reduce((sum, score) => sum + score.score, 0) / scores.length).toFixed(1)}%
+            </div>
+          </div>
+
+          <div className="rounded-lg border p-4 bg-green-50">
+            <div className="text-sm text-gray-500 mb-1">Highest Score</div>
+            <div className="text-2xl font-bold text-green-700">{Math.max(...scores.map((score) => score.score))}%</div>
+            <div className="text-xs text-gray-500 mt-1">
+              {scores.find((score) => score.score === Math.max(...scores.map((s) => s.score)))?.name}
+            </div>
+          </div>
+
+          <div className="rounded-lg border p-4 bg-purple-50">
+            <div className="text-sm text-gray-500 mb-1">Total Subjects Evaluated</div>
+            <div className="text-2xl font-bold text-purple-700">{scores.length}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+

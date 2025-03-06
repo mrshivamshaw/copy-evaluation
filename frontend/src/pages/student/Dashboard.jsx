@@ -4,6 +4,7 @@ import { useState } from "react"
 import Header from "../../components/Header"
 import StudentProfile from "../../components/student/StudentProfile"
 import SubjectUpload from "../../components/student/SubjectUpload"
+import StudentScores from "../../components/student/StudentScores"
 
 // Mock data
 const studentSubjects = [
@@ -36,6 +37,16 @@ export default function StudentDashboard() {
                 My Subjects
               </button>
               <button
+                onClick={() => setActiveTab("scores")}
+                className={`py-4 px-1 text-sm font-medium ${
+                  activeTab === "scores"
+                    ? "border-b-2 border-blue-500 text-blue-600"
+                    : "border-b-2 border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                }`}
+              >
+                My Scores
+              </button>
+              <button
                 onClick={() => setActiveTab("profile")}
                 className={`py-4 px-1 text-sm font-medium ${
                   activeTab === "profile"
@@ -49,15 +60,17 @@ export default function StudentDashboard() {
           </div>
         </div>
 
-        {activeTab === "subjects" ? (
+        {activeTab === "subjects" && (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {subjects.map((subject) => (
               <SubjectUpload key={subject.id} subject={subject} />
             ))}
           </div>
-        ) : (
-          <StudentProfile />
         )}
+
+        {activeTab === "scores" && <StudentScores />}
+
+        {activeTab === "profile" && <StudentProfile />}
       </main>
     </div>
   )
