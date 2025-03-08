@@ -1,6 +1,8 @@
 
 
 export default function SubjectList({ subjects, onRemove }) {
+  // console.log(subjects);
+  
   return (
     <div className="rounded-lg border bg-white p-6 shadow-sm">
       <h2 className="mb-4 text-lg font-semibold">Subject List</h2>
@@ -35,13 +37,13 @@ export default function SubjectList({ subjects, onRemove }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 bg-white">
-            {subjects.map((subject) => (
-              <tr key={subject.id}>
-                <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">{subject.code}</td>
-                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">{subject.name}</td>
-                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">{subject.semester}</td>
+            {subjects?.map((subject) => (
+              <tr key={subject._id}>
+                <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">{subject?.code}</td>
+                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">{subject?.name}</td>
+                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">{subject?.semester}</td>
                 <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                  <button onClick={() => onRemove(subject.id)} className="text-red-600 hover:text-red-900">
+                  <button onClick={() => onRemove(subject._id)} className="text-red-600 hover:text-red-900">
                     Delete
                   </button>
                 </td>

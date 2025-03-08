@@ -7,25 +7,31 @@ import { setLoading } from "../../slices/UIslice";
 
 export const login = (email, password, navigate) => {
   return async (dispatch) => {
-    dispatch(setLoading(true));
-    try {
-        const res = await apiConneector("post", authEndPoints.login, { email, password })
-        localStorage.setItem("token", res.data.token);
-        localStorage.setItem("user", res.data.user);
-        localStorage.setItem("id", res.data.user._id)
-        dispatch(setToken(res?.data?.token));
-        dispatch(setUser(res?.data?.user));
-        dispatch(setAccountType(res?.data?.user?.accountType))
-        toast.success("Login Successful");
-        dispatch(setLoading(false));
-        res?.data?.user?.accountType == "admin" ? navigate('/admin/dashboard') :  res?.data?.user?.accountType == "teacher" ? navigate('/teacher/dashboard') : navigate('/student/dashboard')
-        return true
-    } catch (error) {
-        toast.error(error?.response?.data?.message);
-        dispatch(setLoading(false));
-        return false
+      dispatch(setLoading(true));
+      try {
+          const res = await apiConneector("post", authEndPoints.login, { email, password })
+          if(res?.data?.success == true){
+            localStorage.setItem("token", res.data.token);
+            localStorage.setItem("user", res.data.user);
+            localStorage.setItem("id", res.data.user._id)
+            dispatch(setToken(res?.data?.token));
+            dispatch(setUser(res?.data?.user));
+            dispatch(setAccountType(res?.data?.user?.accountType))
+            toast.success("Login Successful");
+            dispatch(setLoading(false));
+            res?.data?.user?.accountType == "admin" ? navigate('/admin/dashboard') :  res?.data?.user?.accountType == "teacher" ? navigate('/teacher/dashboard') : navigate('/student/dashboard')
+            dispatch(setLoading(false));
+            return true
+          }
+          dispatch(setLoading(false));
+          toast.error(res?.data?.message);
+          return false
+      } catch (error) {
+          toast.error(error?.response?.data?.message);
+          dispatch(setLoading(false));
+          return false
     }
-};
+  };
 };
 
 export const checkToken = async() => {
@@ -53,15 +59,35 @@ export const checkToken = async() => {
 }
 
 export const logout = () => {
-  return (dispatch) => {
-    localStorage.removeItem("user");
-    dispatch(setUser(null));
-    localStorage.removeItem("accountType");
-    dispatch(setAccountType(null))
-    localStorage.removeItem("id");
-    dispatch(setAccountType(null))
-    localStorage.removeItem("token");
-    dispatch(setToken(null));
+  return async (dispatch) => {
+    try {
+      // Make a request to backend logout endpoint
+      // No need to specify withCredentials again
+      await apiConneector("POST", authEndPoints.logout, null);
+      
+      // Clear local storage
+      localStorage.removeItem("user");
+      localStorage.removeItem("accountType");
+      localStorage.removeItem("id");
+      localStorage.removeItem("token");
+      
+      // Update Redux state
+      dispatch(setUser(null));
+      dispatch(setAccountType(null));
+      dispatch(setToken(null));
+      
+    } catch (error) {
+      console.log("Logout error:", error);
+      // Still clear client-side data even if server request fails
+      localStorage.removeItem("user");
+      localStorage.removeItem("accountType");
+      localStorage.removeItem("id");
+      localStorage.removeItem("token");
+      
+      dispatch(setUser(null));
+      dispatch(setAccountType(null));
+      dispatch(setToken(null));
+    }
   };
 };
 

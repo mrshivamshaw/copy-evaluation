@@ -1,40 +1,49 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Header from "../../components/Header"
-import SubjectList from "../../components/admin/SubjectList"
-import TeacherAssignment from "../../components/admin/TeacherAssignment"
-
-// Mock data
-const initialSubjects = [
-  { id: "1", code: "PCC-CS404", name: "Design and Analysis of Algorithm", semester: "4" },
-  { id: "2", code: "PCC-CS405", name: "Operating Systems", semester: "4" },
-  { id: "3", code: "PCC-CS406", name: "Database Management Systems", semester: "4" },
-]
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import Header from "../../components/Header";
+import SubjectList from "../../components/admin/SubjectList";
+import TeacherAssignment from "../../components/admin/TeacherAssignment";
+import { addSubject, deleteSubject, getSubjectList } from "../../servies/operations/admin";
+import toast from "react-hot-toast";
 
 export default function AdminDashboard() {
-  const [subjects, setSubjects] = useState(initialSubjects)
-  const [newSubject, setNewSubject] = useState({ code: "", name: "", semester: "" })
-  const [activeTab, setActiveTab] = useState("subjects")
+  const [newSubject, setNewSubject] = useState({ code: "", name: "", semester: "" });
+  const [activeTab, setActiveTab] = useState("subjects");
 
-  const addSubject = () => {
-    if (newSubject.code && newSubject.name && newSubject.semester) {
-      setSubjects([
-        ...subjects,
-        {
-          id: (subjects.length + 1).toString(),
-          code: newSubject.code,
-          name: newSubject.name,
-          semester: newSubject.semester,
-        },
-      ])
-      setNewSubject({ code: "", name: "", semester: "" })
+  const dispatch = useDispatch();
+  const { subjectList, loading } = useSelector((state) => ({
+    subjectList: state.admin.subjectList || [], // Default to empty array if null/undefined
+    loading: state.ui.loading, // Assuming UIslice has a loading state
+  }));
+
+  // Fetch subjects on mount
+  useEffect(() => {
+    dispatch(getSubjectList());
+  }, [dispatch]);
+
+  const addSubjectHandler = async () => {
+    if (!newSubject.code || !newSubject.name || !newSubject.semester) {
+      toast.error("All fields are required");
+      return;
     }
-  }
+
+    try {
+      const result = await dispatch(addSubject(newSubject));
+      if (result === true) {
+        setNewSubject({ code: "", name: "", semester: "" }); // Reset form on success
+        toast.success("Subject added successfully");
+      }
+    } catch (error) {
+      console.error("Failed to add subject:", error);
+      toast.error("Failed to add subject");
+    }
+  };
 
   const removeSubject = (id) => {
-    setSubjects(subjects.filter((subject) => subject.id !== id))
-  }
+    dispatch(deleteSubject(id));
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -85,6 +94,7 @@ export default function AdminDashboard() {
                     value={newSubject.code}
                     onChange={(e) => setNewSubject({ ...newSubject, code: e.target.value })}
                     placeholder="e.g. PCC-CS407"
+                    disabled={loading}
                   />
                 </div>
                 <div className="space-y-2">
@@ -97,6 +107,7 @@ export default function AdminDashboard() {
                     value={newSubject.name}
                     onChange={(e) => setNewSubject({ ...newSubject, name: e.target.value })}
                     placeholder="e.g. Computer Networks"
+                    disabled={loading}
                   />
                 </div>
                 <div className="space-y-2">
@@ -109,24 +120,31 @@ export default function AdminDashboard() {
                     value={newSubject.semester}
                     onChange={(e) => setNewSubject({ ...newSubject, semester: e.target.value })}
                     placeholder="e.g. 4"
+                    disabled={loading}
                   />
                 </div>
               </div>
               <button
-                onClick={addSubject}
-                className="mt-4 rounded-md bg-blue-700 py-2 px-4 text-white hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                onClick={addSubjectHandler}
+                className="mt-4 rounded-md bg-blue-700 py-2 px-4 text-white hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-gray-400"
+                disabled={loading}
               >
-                Add Subject
+                {loading ? "Adding..." : "Add Subject"}
               </button>
             </div>
 
-            <SubjectList subjects={subjects} onRemove={removeSubject} />
+            {loading ? (
+              <p>Loading subjects...</p>
+            ) : subjectList.length === 0 ? (
+              <p>No subjects available.</p>
+            ) : (
+              <SubjectList subjects={subjectList} onRemove={removeSubject} />
+            )}
           </div>
         ) : (
-          <TeacherAssignment subjects={subjects} />
+          <TeacherAssignment subjects={subjectList} />
         )}
       </main>
     </div>
-  )
+  );
 }
-

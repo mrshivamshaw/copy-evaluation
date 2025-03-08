@@ -2,10 +2,12 @@ import express from 'express';
 import dbconnect from './config/database.js';
 import { config as configDotenv } from 'dotenv';
 import authRoute from './routes/auth.js';
+import adminRoute from './routes/admin.js';
 import userRoute from './routes/userRoute.js';
 import { cloudinaryset } from './config/cloudinary.js';
 import fileUpload from 'express-fileupload';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 
 configDotenv();
 cloudinaryset();
@@ -28,8 +30,11 @@ app.use(fileUpload({
     tempFileDir: '/tmp/'
 }));
 
+app.use(cookieParser());
 app.use('/api/v1/auth', authRoute);
 app.use('/api/v1/user', userRoute);
+app.use('/api/v1/admin', adminRoute)
+
 
 app.get('/', (req, res) => {
     res.send("server is running");

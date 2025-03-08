@@ -26,6 +26,8 @@ export const auth = async (req, res, next) => {
         // Verify the token
         try {
             const decode = jwt.verify(token, process.env.JWT_SECRET);
+            // console.log(decode);
+            req.user = decode
             next();
         } catch (error) {
             return res.status(403).json({
@@ -86,7 +88,7 @@ export const checkToken = async (req, res) => {
 
 export const isStudent = async (req,res,next) => {
     try {
-        const userId = req.body.id  || req.params.id;
+        const userId = req.user.id  || req.params.id;
         
         const userType = await user.findById(userId,'accountType');
         // console.log(userType);
@@ -111,9 +113,9 @@ export const isStudent = async (req,res,next) => {
 
 export const isTeacher = async (req,res,next) => { 
     try {
-        const {id} = req.body;
+        const id = req.user.id;
         const userType = await user.findById(id,'accountType');
-        if(userType.accountType !== ""){
+        if(userType?.accountType !== "teacher"){
             return res.status(400).json({
                 success:false,
                 message:"This is protected route for Teacher"
@@ -134,8 +136,9 @@ export const isTeacher = async (req,res,next) => {
 export const isAdmin = async (req,res,next) => {
     try {
         const userId = req.user.id;
-        const userType = await user.findById(userId,'accountType');
-        if(userType !== "Admin"){
+        const userType = await user.findById(userId,'accountType');        
+
+        if(userType?.accountType !== "admin"){
             return res.status(400).json({
                 success:false,
                 message:"This is protected route for Admin"

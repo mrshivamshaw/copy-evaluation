@@ -18,10 +18,12 @@ export const addSubject = async(req,res) => {
             semester
         })
 
+        const allSub = await Subject.find();
+
         return res.status(200).json({
             message: "Subject added successfully",
             success : true,
-            data : sub
+            data : allSub
         })
     } catch (error) {
         console.log("Error while adding subject : ", error);
@@ -35,7 +37,7 @@ export const addSubject = async(req,res) => {
 export const fetchSubjectListForAdmin = async(req,res) => {
     try {
         const subjects = await Subject.find();
-
+        
         return res.status(200).json({
             message : "Subject feyched successfully",
             success : true,
@@ -52,11 +54,32 @@ export const fetchSubjectListForAdmin = async(req,res) => {
 
 export const deleteSubject = async(req,res) => {
     try {
-        const {id} = req.params
+        const {id} = req.params;
+        
+        if(!id){
+            return res.status(400).json({
+                message : "All fields required",
+                success : false
+            })
+        }
 
-        const deletedSubject = Subject.findByIdAndDelete(id);
+        //check subject exist or not
+        const sub = await Subject.findOne({_id:id});
+        if(!sub){
+            return res.status(400).json({
+                message : "Subject not fount",
+                success : false
+            })
+        }
+
+        //delete subject
+        await Subject.findOneAndDelete({_id:id});
+
+        //get all subjects
+        const subjects = await Subject.find();
 
         return res.status(200).json({
+            subjects,
             message : "Subject deleted successfully",
             success : true,
         }) 
@@ -110,7 +133,7 @@ export const assignTeacherToSubject = async(req,res) => {
 
         //check teacher exist or not
         const teacher = await User.findOne({email:email});
-        if(!teacher){
+        if(!teacher || teacher?.accountType !== "teacher"){
             return res.status(400).json({
                 message : "Teacher not exist",
                 success : false
@@ -118,16 +141,35 @@ export const assignTeacherToSubject = async(req,res) => {
         }
 
         // Push teacher's ObjectId into teacherAssigned array
-        const result = await Subject.findByIdAndUpdate(
+        await Subject.findByIdAndUpdate(
             id,
             { $addToSet: { teacherAssigned: teacher._id } }, // Ensures unique entries
-            { new: true }
-        ).populate("teacherAssigned"); // Populate for better results
+        )
+
+        const subjects = await Subject.find({
+            teacherAssigned: { $exists: true, $ne: [] },
+        })
+            .populate({
+                path: "teacherAssigned",
+                ref: "User",
+                select: "name email _id",
+            })
+            .exec();
+
+        // Extract and flatten teachers while adding subjectId to each entry
+        const AllAssignedTeacher = subjects.flatMap((sub) =>
+            sub.teacherAssigned.map((teacher) => ({
+                ...teacher.toObject(), // Convert Mongoose document to plain object
+                subjectId: sub._id, // Add subjectId to each teacher
+            }))
+        );
+
+        // console.log(AllAssignedTeacher);
 
         return res.status(200).json({
+            message: "Subject assigned successfully",
             success : true,
-            message : "Teacher assigned successfully",
-            data : result
+            data : AllAssignedTeacher
         })
 
     } catch (error) {
@@ -140,36 +182,58 @@ export const assignTeacherToSubject = async(req,res) => {
 }
 
 
-export const fetchAssingedTeacher = async(req,res) => {
+export const fetchAssingedTeacher  = async (req, res) => {
     try {
-        const assignedTeacher = await Subject.find({ teacherAssigned: { $exists: true, $not: { $size: 0 } } }).populate("teacherAssigned");
+        // Find subjects with at least one assigned teacher
+        const subjects = await Subject.find({
+            teacherAssigned: { $exists: true, $ne: [] },
+        })
+            .populate({
+                path: "teacherAssigned",
+                ref: "User",
+                select: "name email _id",
+            })
+            .exec();
 
+        // Extract and flatten teachers while adding subjectId to each entry
+        const AllAssignedTeacher = subjects.flatMap((sub) =>
+            sub.teacherAssigned.map((teacher) => ({
+                ...teacher.toObject(), // Convert Mongoose document to plain object
+                subjectId: sub._id, // Add subjectId to each teacher
+            }))
+        );
+
+        // console.log(AllAssignedTeacher);
+        
 
         return res.status(200).json({
-            message : "Assigned Teaher fetched successfully",
-            success : true,
-            data : assignedTeacher
-        })
+            message: "Assigned Teachers fetched successfully",
+            success: true,
+            data: AllAssignedTeacher,
+        });
     } catch (error) {
-        console.log("Error while fetching Assigned Teacher : ",error);
+        console.log("Error while fetching Assigned Teachers:", error);
         return res.status(400).json({
-            success:false,
-            message:"Error while fetching Assigned Teacher",
-        })
+            success: false,
+            message: "Error while fetching Assigned Teachers",
+        });
     }
-}
+};
+
 
 export const removeAssignedTecher = async(req,res) => {
     try {
         const {id,email} = req.body;
-
-        if(!id){
+        console.log(id,email);
+        
+        if(!id || !email){
             return res.status(400).json({
                 message : "All fields required",
                 success : false
             })
         }
-
+        console.log(id,email);
+        
         //check subject exist or not
         const sub = await Subject.findOne({_id:id});
         if(!sub){
@@ -178,28 +242,53 @@ export const removeAssignedTecher = async(req,res) => {
                 success : false
             })
         }
-
+        console.log("subject",sub);
+        
         //check teacher exist or not
         const teacher = await User.findOne({email:email});
-        if(!teacher){
+        if(!teacher || teacher?.accountType !== "teacher"){
             return res.status(400).json({
                 message : "Teacher not fount",
                 success : false
             })
         }
         const updatedSub = sub?.teacherAssigned?.filter(s => s._id.toString() !== teacher?._id.toString());
-
+        console.log(updatedSub);
+        
         // Remove teacher from subject
-        const updateSub = await Subject.findByIdAndUpdate(
+        await Subject.findByIdAndUpdate(
             sub._id,  // Ensure you're updating the correct subject ID
             { teacherAssigned: updatedSub }, 
             { new: true }
         );
 
+        // Find subjects with at least one assigned teacher
+        const subjects = await Subject.find({
+            teacherAssigned: { $exists: true, $ne: [] },
+        })
+            .populate({
+                path: "teacherAssigned",
+                ref: "User",
+                select: "name email _id",
+            })
+            .exec();
+
+         // Extract and flatten teachers while adding subjectId to each entry
+         const AllAssignedTeacher = subjects.flatMap((sub) =>
+            sub.teacherAssigned.map((teacher) => ({
+                ...teacher.toObject(), // Convert Mongoose document to plain object
+                subjectId: sub._id, // Add subjectId to each teacher
+            }))
+        );
+
+        // console.log(AllAssignedTeacher);
+        
+
         return res.status(200).json({
-            message : "Assigned Teaher removed successfully",
-            success : true,
-        }) 
+            message: "Assigned Teachers removed successfully",
+            success: true,
+            data: AllAssignedTeacher,
+        });
 
 
     } catch (error) {

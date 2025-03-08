@@ -1,35 +1,49 @@
-"use client"
-
-import { useState } from "react"
-
-
+import { useEffect, useState } from "react"
+import { useDispatch, useSelector } from "react-redux"
+import { getAssignedSubjectList, assignSubject, unassignSubject } from "../../servies/operations/admin"
+import toast from "react-hot-toast"
 
 export default function TeacherAssignment({ subjects }) {
-  const [assignments, setAssignments] = useState([])
   const [teacherEmail, setTeacherEmail] = useState("")
   const [selectedSubject, setSelectedSubject] = useState("")
+  const { assignedSubjectList, loading } = useSelector((state) => ({
+    assignedSubjectList: state.admin.assignedSubjectList || [], // Default to empty array if null/undefined
+    loading: state.ui.loading, // Assuming UIslice has a loading state
+  }));
+  const dispatch = useDispatch()
 
-  const assignSubject = () => {
-    if (teacherEmail && selectedSubject) {
-      setAssignments([
-        ...assignments,
-        {
-          id: Date.now().toString(),
-          teacherEmail,
-          subjectId: selectedSubject,
-        },
-      ])
-      setTeacherEmail("")
-      setSelectedSubject("")
+  useEffect(() => {
+    dispatch(getAssignedSubjectList())
+  }, [dispatch])
+
+  const handleAssignSubject = async() => {
+    if (!teacherEmail || !selectedSubject) {
+      toast.error("All fields are required");
+      return;
+    }
+    try {
+      const result = await dispatch(assignSubject({
+        id: selectedSubject, 
+        email: teacherEmail
+      }));
+      
+      if (result === true) {
+        setSelectedSubject("")
+        setTeacherEmail("")
+        toast.success("Subject assigned successfully");
+      }
+    } catch (error) {
+      console.error("Failed to assign subject:", error);
+      toast.error("Failed to assign subject");
     }
   }
 
-  const removeAssignment = (id) => {
-    setAssignments(assignments.filter((assignment) => assignment.id !== id))
+  const handleRemoveAssignment = (id,email) => {    
+    dispatch(unassignSubject({id,email}));    
   }
 
   const getSubjectName = (subjectId) => {
-    const subject = subjects.find((s) => s.id === subjectId)
+    const subject = subjects.find((s) => s._id === subjectId)
     return subject ? `${subject.code} - ${subject.name}` : "Unknown Subject"
   }
 
@@ -63,8 +77,8 @@ export default function TeacherAssignment({ subjects }) {
               onChange={(e) => setSelectedSubject(e.target.value)}
             >
               <option value="">Select a subject</option>
-              {subjects.map((subject) => (
-                <option key={subject.id} value={subject.id}>
+              {subjects && subjects.map((subject) => (
+                <option key={subject._id} value={subject._id}>
                   {subject.code} - {subject.name}
                 </option>
               ))}
@@ -72,7 +86,7 @@ export default function TeacherAssignment({ subjects }) {
           </div>
         </div>
         <button
-          onClick={assignSubject}
+          onClick={handleAssignSubject}
           className="mt-4 rounded-md bg-blue-700 py-2 px-4 text-white hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           disabled={!teacherEmail || !selectedSubject}
         >
@@ -107,22 +121,30 @@ export default function TeacherAssignment({ subjects }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 bg-white">
-              {assignments.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500">
+                    Loading...
+                  </td>
+                </tr>
+              ) : assignedSubjectList?.length === 0 ? (
                 <tr>
                   <td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500">
                     No assignments yet
                   </td>
                 </tr>
               ) : (
-                assignments.map((assignment) => (
-                  <tr key={assignment.id}>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">{assignment.teacherEmail}</td>
+                assignedSubjectList?.map((assignment, index) => (
+                  <tr key={index}>
                     <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                      {getSubjectName(assignment.subjectId)}
+                      {assignment?.email}
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                      {getSubjectName(assignment?.subjectId)}
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
                       <button
-                        onClick={() => removeAssignment(assignment.id)}
+                        onClick={() => handleRemoveAssignment(assignment?.subjectId,assignment?.email)}
                         className="text-red-600 hover:text-red-900"
                       >
                         Delete
@@ -138,4 +160,3 @@ export default function TeacherAssignment({ subjects }) {
     </div>
   )
 }
-
