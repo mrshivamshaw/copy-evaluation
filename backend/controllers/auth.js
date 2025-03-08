@@ -21,7 +21,7 @@ export const signup = async (req,res) =>{
             accountType,
             contactNumber,
         } = req.body;
-        console.log(req.body);
+        // console.log(req.body);
         //all fields must be filled
         if(!firstName || !lastName || !password || !confirmPassword || !email || !accountType  ){
             return res.status(401).json({
@@ -51,14 +51,6 @@ export const signup = async (req,res) =>{
         const hashedPassword = bcrypt.hash(password,10)
         const finalPass = (await hashedPassword).toString()
 
-        //create entry in db
-        const profileDetails = await Profile.create({
-            gender:null,
-            dateOfBirth:null,
-            about:null,
-            contactNumber:null,
-        })
-
         const user = await User.create({
             firstName,
             lastName,
@@ -66,15 +58,32 @@ export const signup = async (req,res) =>{
             password : finalPass,
             contactNumber,
             accountType,
-            additionalDetails:profileDetails._id,
             image:`https://api.dicebear.com/7.x/initials/svg?seed=${firstName} ${lastName}`
         })
 
+        let profileDetails
+        if(accountType == "student"){
+            profileDetails = await Profile.create({
+                semester : req?.body?.semester,
+                department : req?.body?.department,
+                contactNumber : req?.body?.contactNumber,
+                studentId : user?._id
+            })
+        }
+
+        const updateUser = await User.findOneAndUpdate(
+            {_id : user._id},
+            {
+                $set : {
+                    additionalDetails : profileDetails?._id
+                }
+            },
+            {new : true}
+        )
         //retur response
         return res.status(200).json({
             success:true,
             message:"user registered successfully",
-            data:user
         })
     } catch (error) {
         console.log("Error while registerinf user : ",error);
@@ -102,7 +111,7 @@ export const login = async (req,res) =>{
         }
 
         //check that user exist or not
-        const user = await User.findOne({email})
+        const user = await User.findOne({email}).populate("additionalDetails")
         if(!user){
             return res.status(400).json({
                 success:false,

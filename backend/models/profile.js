@@ -1,20 +1,19 @@
 import mongoose from "mongoose";
 
 const ProfileSchema = mongoose.Schema({
-    gender:{
-        type:String,
-        // required:true,
-        trim:true
+    semester:{
+        type:Number,
+        required:true,
+        min:1,
+        max:8
     },
-    dateOfBirth : {
+    studentId : {
         type:String,
-        // required:true,
-        trim:true
+        required:true,
     },
-    about:{
+    department:{
         type:String,
-        // required:true,
-        trim:true
+        required:true,
     },
     contactNumber:{
         type:String,
