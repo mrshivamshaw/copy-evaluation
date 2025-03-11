@@ -1,10 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Header from "../../components/Header"
 import StudentProfile from "../../components/student/StudentProfile"
 import SubjectUpload from "../../components/student/SubjectUpload"
 import StudentScores from "../../components/student/StudentScores"
+import { apiConneector } from "../../servies/apiConnector"
+import { studentEndpoints } from "../../servies/api"
 
 // Mock data
 const studentSubjects = [
@@ -14,8 +16,24 @@ const studentSubjects = [
 ]
 
 export default function StudentDashboard() {
-  const [subjects] = useState(studentSubjects)
+  const [subjects, setSubjects] = useState(studentSubjects)
   const [activeTab, setActiveTab] = useState("subjects")
+
+  useEffect(() => {
+    // Fetch subjects from the backend
+    const fetchSubjects = async () => {
+      try {
+        const response = await apiConneector("get", studentEndpoints?.fetchSubject);
+        // console.log(response?.data?.data);
+        
+        setSubjects(response?.data?.data);
+      } catch (error) {
+        console.error('Error fetching subjects:', error);
+      }
+    };
+
+    fetchSubjects();
+  }, [])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -62,8 +80,8 @@ export default function StudentDashboard() {
 
         {activeTab === "subjects" && (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {subjects.map((subject) => (
-              <SubjectUpload key={subject.id} subject={subject} />
+            {subjects.map((subject, i) => (
+              <SubjectUpload key={i} subject={subject} />
             ))}
           </div>
         )}

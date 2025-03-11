@@ -35,3 +35,9 @@ export const adminEndpoints = {
 export const teacherEndpoints = {
     fetchAssignedSubject : `${BASE_URL}/teacher/fetch-subject`,
 }
+
+//student endpoints
+export const studentEndpoints = {
+    fetchSubject : `${BASE_URL}/student/fetch-subject`,
+    addSubmission : `${BASE_URL}/student/add-submission/`,
+}

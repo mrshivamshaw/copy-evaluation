@@ -1,30 +1,49 @@
-import React from "react"
+import React, { useEffect } from "react"
 
 import { useState } from "react"
+import { studentEndpoints } from "../../servies/api"
+import { apiConneector } from "../../servies/apiConnector"
 
 
 export default function SubjectUpload({ subject }) {
   const [isUploading, setIsUploading] = useState(false)
-  const [isSubmitted, setIsSubmitted] = useState(subject.submitted)
+  const [isSubmitted, setIsSubmitted] = useState(subject?.submission?._id ? true : false)
+  // console.log(subject?.submission);
+  
   const [selectedFile, setSelectedFile] = useState(null)
-
+  useEffect(() => {
+    setIsSubmitted(subject?.submission?._id ? true : false);
+  }, [subject]);
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       setSelectedFile(e.target.files[0])
     }
   }
 
-  const handleUpload = () => {
+  const handleUpload = async() => {
     if (!selectedFile) return
 
     setIsUploading(true)
 
-    // Simulate upload
-    setTimeout(() => {
+    try {
+      const formData = new FormData()
+      formData.append("pdf", selectedFile); // The key should match multer's "pdf"
+
+      // You can replace this with your own API endpoint for file upload
+      const res = await apiConneector("post", studentEndpoints?.addSubmission + subject?.subject?._id, formData);
+
+      if (res?.data?.success) {
+        setIsUploading(false)
+        setSelectedFile(null)
+        setIsSubmitted(true)
+        console.log(res);
+        
+      }
+    } catch (error) {
       setIsUploading(false)
-      setIsSubmitted(true)
-      // In a real app, you would upload the file to the backend
-    }, 1500)
+      console.error("Error uploading file:", error);
+    }
+    
   }
 
   return (
@@ -33,10 +52,10 @@ export default function SubjectUpload({ subject }) {
         <div className="flex items-start justify-between">
           <div>
             <span className="mb-2 inline-block rounded-full border border-blue-200 px-2 py-1 text-xs text-blue-700">
-              Semester {subject.semester}
+              Semester {subject?.subject?.semester}
             </span>
-            <h3 className="text-lg font-semibold">{subject.name}</h3>
-            <p className="text-sm text-gray-600">{subject.code}</p>
+            <h3 className="text-lg font-semibold">{subject?.subject?.name}</h3>
+            <p className="text-sm text-gray-600">{subject?.subject?.code}</p>
           </div>
           {isSubmitted && (
             <span className="rounded-full bg-green-500 px-2 py-1 text-xs font-medium text-white">
@@ -134,7 +153,7 @@ export default function SubjectUpload({ subject }) {
           disabled={isUploading || (!selectedFile && !isSubmitted)}
           onClick={handleUpload}
         >
-          {isUploading ? "Uploading..." : isSubmitted ? "Resubmit" : "Upload Submission"}
+          {isUploading ? "Uploading..." : isSubmitted ? "Submitted ✅" : "Upload Submission"}
         </button>
       </div>
     </div>

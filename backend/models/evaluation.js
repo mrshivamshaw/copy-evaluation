@@ -8,6 +8,13 @@ const EvaluationSchema = mongoose.Schema({
         required: true
     },
 
+    //submission id
+    submissionId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Submission',
+        required: true
+    },
+
     // Total marks obtained
     totalMarks: {
         type: Number,
@@ -31,21 +38,21 @@ const EvaluationSchema = mongoose.Schema({
      // Dynamic questions structure
     questions: [{
         questionNum: {
-        type: Number,
-        required: true
+            type: Number,
+            required: true
         },
         marks: {
-        type: Number,
-        default: 0,
-        min: 0
+            type: Number,
+            default: 0,
+            min: 0
         },
         maxMarks: {
-        type: Number,
-        required: true
+            type: Number,
+            required: true
         },
         isAttempted: {
-        type: Boolean,
-        default: false
+            type: Boolean,
+            default: false
         }
     }],
 
