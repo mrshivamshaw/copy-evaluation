@@ -2,6 +2,7 @@ import { Router } from "express"
 import { auth } from "../middlewares/auth.js"
 import user from "../models/user.js"
 import { uploadImageToCloudinary } from "../utils/imageUploader.js"
+import { updateProfile } from "../controllers/profile.js"
 
 const userRoute = Router()
 
@@ -37,31 +38,7 @@ userRoute.get('/profile/:id',auth,async(req,res)=>{
 
 })
 
-userRoute.post('/updateProfile',auth,async(req,res)=>{
-    try {
-        const {firstName,lastName,contactNumber,about,image,gender,id} = req.body
-        let dob = req.body.dob
-         dob = new Date(dob)
-        const userDetail = await user.findByIdAndUpdate(id,{firstName,lastName,contactNumber,about,image,dob,gender},{new:true})
-        if(!userDetail){
-            return res.status(404).json({
-                message : "User not found",
-                success: false
-            })
-        }
-        return res.status(200).json({
-            user : userDetail,
-            message : "user profile updated",
-            success: true
-        })
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({
-            message : "Error occured while updating User details",
-            success : false
-        })
-    }
-})
+userRoute.post('/updateProfile',auth,updateProfile)
 
 userRoute.post('/updatePic',auth,async(req,res)=>{
     try {

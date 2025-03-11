@@ -13,6 +13,8 @@ const SignInSite = () => {
   
   const [firstName, setFirstName] = useState(false);
   const [lastName, setLastName] = useState(false);
+  const [department, setDepartment] = useState(false);
+  const [semester, setSemester] = useState();
   const [email, setEmail] = useState(false);
   const [pass, setPass] = useState(false);
   const [conPass, setConPass] = useState(false);
@@ -20,6 +22,8 @@ const SignInSite = () => {
   const [changeFiled, setChangeFiled] = useState({
     accountType: "" || "student",
     firstName: "",
+    department: "",
+    semester: "",
     lastName: "",
     email: "",
     password: "",
@@ -46,9 +50,8 @@ const SignInSite = () => {
       toast.error("Please fill all the fields");
       return;
     }
-    console.log(changeFiled);
+    changeFiled?.accountType == "student" ? changeFiled?.department == "" || changeFiled?.semester == "" ? toast.error("Please fill all the fields") : dispatch(signup(changeFiled, navigate)) : dispatch(signup(changeFiled, navigate));
     
-    dispatch(signup(changeFiled, navigate));
   };
 
   return (
@@ -149,6 +152,63 @@ const SignInSite = () => {
                   />
                 </div>
               </div>
+              {
+                changeFiled.accountType === "student" &&
+                <div className="flex flex-col md:flex-col lg:flex-row xl:flex-row gap-[1.45vw]">
+                <div className="flex flex-col h-[7vh] justify-end ">
+                  <label
+                    htmlFor="department"
+                    className={
+                      department
+                        ? "text-black font-medium text-sm block"
+                        : "text-black font-medium text-sm hidden"
+                    }
+                  >
+                    Department
+                  </label>
+                  <input
+                    type="text"
+                    id="department"
+                    name="department"
+                    value={changeFiled.department}
+                    className="text-black rounded-lg px-4 py-1"
+                    style={{
+                      borderBottom: "1px solid black",
+                    }}
+                    placeholder="Enter your Department"
+                    onFocus={() => setDepartment(true)}
+                    onBlur={() => setDepartment(false)}
+                    onChange={(e) => changeHandler(e)}
+                  />
+                </div>
+                <div className="flex flex-col h-[7vh] justify-end ">
+                  <label
+                    htmlFor="semester"
+                    className={
+                      semester
+                        ? "text-black font-medium text-sm block"
+                        : "text-black font-medium text-sm hidden"
+                    }
+                  >
+                    Semester
+                  </label>
+                  <input
+                    type="text"
+                    id="semester"
+                    name="semester"
+                    value={changeFiled.semester}
+                    onChange={(e) => changeHandler(e)}
+                    className="text-black rounded-lg px-4 py-1"
+                    style={{
+                      borderBottom: "1px solid black",
+                    }}
+                    placeholder="Enter your Semester"
+                    onFocus={() => setSemester(true)}
+                    onBlur={() => setSemester(false)}
+                  />
+                </div>
+              </div>
+              }
               <div className="flex gap-[1.45vw] w-full ">
                 <div className="flex flex-col w-full h-[7vh] justify-end ">
                   <label

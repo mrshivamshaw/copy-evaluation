@@ -224,7 +224,7 @@ export const fetchAssingedTeacher  = async (req, res) => {
 export const removeAssignedTecher = async(req,res) => {
     try {
         const {id,email} = req.body;
-        console.log(id,email);
+        // console.log(id,email);
         
         if(!id || !email){
             return res.status(400).json({
@@ -232,7 +232,7 @@ export const removeAssignedTecher = async(req,res) => {
                 success : false
             })
         }
-        console.log(id,email);
+        // console.log(id,email);
         
         //check subject exist or not
         const sub = await Subject.findOne({_id:id});
@@ -242,7 +242,7 @@ export const removeAssignedTecher = async(req,res) => {
                 success : false
             })
         }
-        console.log("subject",sub);
+        // console.log("subject",sub);
         
         //check teacher exist or not
         const teacher = await User.findOne({email:email});
@@ -253,7 +253,7 @@ export const removeAssignedTecher = async(req,res) => {
             })
         }
         const updatedSub = sub?.teacherAssigned?.filter(s => s._id.toString() !== teacher?._id.toString());
-        console.log(updatedSub);
+        // console.log(updatedSub);
         
         // Remove teacher from subject
         await Subject.findByIdAndUpdate(

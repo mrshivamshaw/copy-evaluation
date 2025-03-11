@@ -3,7 +3,7 @@ import user from "../models/user.js";
 
 export const updateProfile = async  (req,res)  =>  {
     try {
-        const {about = "",dateOfBirth = "",gender,contactNumber} = req.body
+        const {firstName,lastName,contactNumber,email,department,semester} = req.body
         const id = req.user.id
 
         if(!id){
@@ -15,23 +15,40 @@ export const updateProfile = async  (req,res)  =>  {
 
         //find the user in user schema
         const userDetails = await user.findById(id)
+
+        if(!userDetails){
+            return res.status(400).json({
+                success : false,
+                message : "User not found"
+            })
+        }
+
+        userDetails.firstName = firstName
+        userDetails.lastName = lastName
+        userDetails.contactNumber = contactNumber
+        userDetails.email = email
+
+        await userDetails.save()
+
         const profileId = userDetails.additionalDetails
 
         //find profile
         const profile = await Profile.findById(profileId)
 
         //update profile
-        profile.gender = gender
-        profile.dateOfBirth = dateOfBirth
-        profile.contactNumber = contactNumber
-        profile.about = about
+        profile.semester = semester
+        profile.department = department
 
         await profile.save()
+
+        const userData = await user.findById(id).populate("additionalDetails")
+        userData.password = undefined
+        
 
         return res.status(200).json({
             success:true,
             message:"profile updated successfully",
-            data:profile
+            data: userData
         })
 
 

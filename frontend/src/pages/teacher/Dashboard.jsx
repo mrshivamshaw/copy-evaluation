@@ -1,7 +1,9 @@
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import Header from "../../components/Header"
+import { useDispatch, useSelector } from "react-redux"
+import { getAssignedSubjectList } from "../../servies/operations/teacher"
 
 // Mock data
 const assignedSubjects = [
@@ -28,6 +30,12 @@ export default function TeacherDashboard() {
   const navigate = useNavigate()
   const [subjects] = useState(assignedSubjects)
   const [activeTab, setActiveTab] = useState("subjects")
+  const dispatch = useDispatch();
+  const {assignedSubjectList} = useSelector(state => state.teacher)
+
+  useEffect(() => {
+    dispatch(getAssignedSubjectList());
+  }, [dispatch]);
 
   const formatDate = (dateString) => {
     const date = new Date(dateString)

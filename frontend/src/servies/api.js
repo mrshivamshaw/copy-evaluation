@@ -30,3 +30,8 @@ export const adminEndpoints = {
     assignSubject : `${BASE_URL}/admin/assign-subject`,
     deleteAssignSubject : `${BASE_URL}/admin/delete-assign-subject`,
 }
+
+//teacher endpoints
+export const teacherEndpoints = {
+    fetchAssignedSubject : `${BASE_URL}/teacher/fetch-subject`,
+}

@@ -1,15 +1,28 @@
 "use client"
 
 import { useState } from "react"
+import { useDispatch, useSelector } from "react-redux"
+import { updateProfileDetail } from "../../servies/operations/student"
 
 export default function StudentProfile() {
+  // const [profile, setProfile] = useState({
+  //   name: "John Doe",
+  //   email: "john.doe@example.com",
+  //   studentId: "CS2101",
+  //   semester: "4",
+  //   department: "Computer Science",
+  //   phone: "+1234567890",
+  // })
+  const dispatch = useDispatch()
+  const {user} = useSelector((state) => state.profile) 
   const [profile, setProfile] = useState({
-    name: "John Doe",
-    email: "john.doe@example.com",
-    studentId: "CS2101",
-    semester: "4",
-    department: "Computer Science",
-    phone: "+1234567890",
+    firstName: user?.firstName,
+    lastName: user?.lastName,
+    email: user?.email,
+    studentId: user?._id,
+    semester: user?.additionalDetails?.semester,
+    department: user?.additionalDetails?.department,
+    phone: user?.additionalDetails?.contactNumber || "+1234567890",
   })
 
   const handleChange = (field, value) => {
@@ -18,7 +31,9 @@ export default function StudentProfile() {
 
   const handleSave = () => {
     // In a real app, you would save the profile to the backend
-    alert("Profile updated successfully!")
+    // alert("Profile updated successfully!")
+    dispatch(updateProfileDetail(profile))
+    
   }
 
   return (
@@ -29,7 +44,7 @@ export default function StudentProfile() {
       <div className="flex flex-col items-center space-y-4 md:flex-row md:items-start md:space-x-4 md:space-y-0">
         <div className="flex flex-col items-center space-y-2">
           <div className="h-24 w-24 overflow-hidden rounded-full bg-gray-200">
-            <img src="/placeholder.svg?height=96&width=96" alt={profile.name} className="h-full w-full object-cover" />
+            <img src={user?.image} alt={profile.name} className="h-full w-full object-cover" />
           </div>
           <button className="rounded-md border border-gray-300 py-1 px-3 text-sm text-gray-700 hover:bg-gray-100">
             Change Photo
@@ -39,14 +54,25 @@ export default function StudentProfile() {
         <div className="w-full space-y-4">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                Full Name
+              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
+                First Name
               </label>
               <input
-                id="name"
+                id="firstName"
                 className="w-full rounded-md border border-gray-300 p-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                value={profile.name}
-                onChange={(e) => handleChange("name", e.target.value)}
+                value={profile.firstName}
+                onChange={(e) => handleChange("firstName", e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
+                Last Name
+              </label>
+              <input
+                id="lastName"
+                className="w-full rounded-md border border-gray-300 p-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                value={profile.lastName}
+                onChange={(e) => handleChange("lastName", e.target.value)}
               />
             </div>
             <div className="space-y-2">

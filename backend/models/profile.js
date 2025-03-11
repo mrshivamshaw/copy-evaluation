@@ -5,7 +5,8 @@ const ProfileSchema = mongoose.Schema({
         type:Number,
         required:true,
         min:1,
-        max:8
+        max:8,
+        default:1
     },
     studentId : {
         type:String,
@@ -14,6 +15,7 @@ const ProfileSchema = mongoose.Schema({
     department:{
         type:String,
         required:true,
+        
     },
     contactNumber:{
         type:String,

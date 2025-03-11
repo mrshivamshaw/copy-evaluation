@@ -8,6 +8,7 @@ import { cloudinaryset } from './config/cloudinary.js';
 import fileUpload from 'express-fileupload';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import teacherRoute from './routes/teacher.js';
 
 configDotenv();
 cloudinaryset();
@@ -33,7 +34,8 @@ app.use(fileUpload({
 app.use(cookieParser());
 app.use('/api/v1/auth', authRoute);
 app.use('/api/v1/user', userRoute);
-app.use('/api/v1/admin', adminRoute)
+app.use('/api/v1/admin', adminRoute);
+app.use('/api/v1/teacher', teacherRoute);
 
 
 app.get('/', (req, res) => {

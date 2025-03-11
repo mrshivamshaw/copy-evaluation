@@ -13,6 +13,10 @@ const profileSlice = createSlice({
         setUser(state,action){
             state.user = action.payload
             localStorage.setItem("user",JSON.stringify(action.payload))
+            console.log(state.user);
+            console.log(localStorage.getItem("user"));
+            
+            
         },
         setAccountType(state,action){
             state.accountType = action.payload;
