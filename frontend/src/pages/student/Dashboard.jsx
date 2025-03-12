@@ -9,14 +9,14 @@ import { apiConneector } from "../../servies/apiConnector"
 import { studentEndpoints } from "../../servies/api"
 
 // Mock data
-const studentSubjects = [
-  { id: "1", code: "PCC-CS404", name: "Design and Analysis of Algorithm", semester: "4", submitted: false },
-  { id: "2", code: "PCC-CS405", name: "Operating Systems", semester: "4", submitted: true },
-  { id: "3", code: "PCC-CS406", name: "Database Management Systems", semester: "4", submitted: false },
-]
+// const studentSubjects = [
+//   { id: "1", code: "PCC-CS404", name: "Design and Analysis of Algorithm", semester: "4", submitted: false },
+//   { id: "2", code: "PCC-CS405", name: "Operating Systems", semester: "4", submitted: true },
+//   { id: "3", code: "PCC-CS406", name: "Database Management Systems", semester: "4", submitted: false },
+// ]
 
 export default function StudentDashboard() {
-  const [subjects, setSubjects] = useState(studentSubjects)
+  const [subjects, setSubjects] = useState([])
   const [activeTab, setActiveTab] = useState("subjects")
 
   useEffect(() => {

@@ -222,7 +222,7 @@ export default function TeacherDashboard() {
                         Evaluated Submissions
                       </span>
                       <span className="rounded-full bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-800">
-                        {subject?.submission?.length} Pending
+                        {subject?.submission?.length} Evaluated
                       </span>
                     </div>
                     <ul className="space-y-2">

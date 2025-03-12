@@ -1,6 +1,9 @@
-import React from "react"
+import React, { useEffect } from "react"
 
 import { useState } from "react"
+import { apiConneector } from "../../servies/apiConnector"
+import toast from "react-hot-toast"
+import { studentEndpoints } from "../../servies/api"
 
 // Mock data for student scores
 const mockScores = [
@@ -37,8 +40,23 @@ const mockScores = [
 ]
 
 export default function StudentScores() {
-  const [scores] = useState(mockScores)
+  const [scores,setScores] = useState(mockScores)
   const [expandedFeedback, setExpandedFeedback] = useState(null)
+
+
+  useEffect(() => {
+    const fetchScores = async () => {
+      try {
+        const res = await apiConneector("get", studentEndpoints?.getScores)
+        console.log(res?.data?.scores)
+        setScores(res?.data?.scores)
+      } catch (error) {
+        console.log(error);
+        toast.error(error?.response?.data?.message);
+      }
+    }
+    fetchScores()
+  }, [])
 
   const formatDate = (dateString) => {
     const date = new Date(dateString)
@@ -97,42 +115,42 @@ export default function StudentScores() {
                 >
                   Evaluated On
                 </th>
-                <th
+                {/* <th
                   scope="col"
                   className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
                 >
                   Feedback
-                </th>
+                </th> */}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 bg-white">
               {scores.map((score) => (
                 <React.Fragment key={score.id}>
                   <tr className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{score.name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{score.code}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{score?.submissionId?.subjectId?.name}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{score?.submissionId?.subjectId?.code}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <span className={`${getScoreColor(score.score)}`}>
-                        {score.score}/{score.maxScore}
+                      <span className={`${getScoreColor(score?.totalMarks)}`}>
+                        {score?.totalMarks}/{score?.maxMarks}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatDate(score.evaluatedAt)}
+                      {formatDate(score?.metadata?.submissionTime)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <button onClick={() => toggleFeedback(score.id)} className="text-blue-600 hover:text-blue-800">
                         {expandedFeedback === score.id ? "Hide Feedback" : "View Feedback"}
                       </button>
-                    </td>
+                    </td> */}
                   </tr>
-                  {expandedFeedback === score.id && (
+                  {/* {expandedFeedback === score.id && (
                     <tr className="bg-blue-50">
                       <td colSpan={5} className="px-6 py-4 text-sm text-gray-700">
                         <div className="font-medium mb-1">Teacher's Feedback:</div>
                         <p>{score.feedback}</p>
                       </td>
                     </tr>
-                  )}
+                  )} */}
                 </React.Fragment>
               ))}
             </tbody>
@@ -147,15 +165,15 @@ export default function StudentScores() {
           <div className="rounded-lg border p-4 bg-blue-50">
             <div className="text-sm text-gray-500 mb-1">Average Score</div>
             <div className="text-2xl font-bold text-blue-700">
-              {(scores.reduce((sum, score) => sum + score.score, 0) / scores.length).toFixed(1)}%
+              {(scores.reduce((sum, score) => sum + score?.totalMarks, 0) / scores.length).toFixed(1)}
             </div>
           </div>
 
           <div className="rounded-lg border p-4 bg-green-50">
             <div className="text-sm text-gray-500 mb-1">Highest Score</div>
-            <div className="text-2xl font-bold text-green-700">{Math.max(...scores.map((score) => score.score))}%</div>
+            <div className="text-2xl font-bold text-green-700">{Math.max(...scores.map((score) => score?.totalMarks))}</div>
             <div className="text-xs text-gray-500 mt-1">
-              {scores.find((score) => score.score === Math.max(...scores.map((s) => s.score)))?.name}
+              {scores.find((score) => score?.totalMarks === Math.max(...scores.map((s) => s?.totalMarks)))?.submissionId?.subjectId?.name}
             </div>
           </div>
 

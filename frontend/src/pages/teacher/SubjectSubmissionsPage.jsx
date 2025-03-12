@@ -30,7 +30,7 @@ export default function SubjectSubmissionsPage() {
   }, [assignedSubjectList, id, dispatch]);
 
   useEffect(() => {
-    console.log("Current subject:", subject);
+    // console.log("Current subject:", subject);
   }, [subject]);
 
   const formatDate = (dateString) => {

@@ -43,4 +43,5 @@ export const teacherEndpoints = {
 export const studentEndpoints = {
     fetchSubject : `${BASE_URL}/student/fetch-subject`,
     addSubmission : `${BASE_URL}/student/add-submission/`,
+    getScores: `${BASE_URL}/student/submission-scores`,
 }
