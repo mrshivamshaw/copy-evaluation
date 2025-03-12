@@ -131,21 +131,34 @@ export const assignTeacherToSubject = async(req,res) => {
             })
         }
 
-        //check teacher exist or not
-        const teacher = await User.findOne({email:email});
-        if(!teacher || teacher?.accountType !== "teacher"){
-            return res.status(400).json({
-                message : "Teacher not exist",
+        const teacherDetails = await User.findOne({email:email});
+
+        if(!teacherDetails){
+            return res.status(404).json({
+                message : "No teacher found",
                 success : false
             })
         }
 
-        // Push teacher's ObjectId into teacherAssigned array
-        await Subject.findByIdAndUpdate(
-            id,
-            { $addToSet: { teacherAssigned: teacher._id } }, // Ensures unique entries
-        )
+        
+        //check whether the teacher is already assgined to the subject or not
+        const checkAssignment = await Subject.findOne({
+            teacherAssigned: { $in: [teacherDetails?._id] },
+        })
 
+        if(checkAssignment){
+            return res.status(400).json({
+                message : "Same teacher cannot be assigned",
+                success : false
+            })
+        }
+        // Push teacher's ObjectId into teacherAssigned array
+        const result =await Subject.findByIdAndUpdate(
+            id,
+            { $push: { teacherAssigned: req.user.id } }, // Ensures unique entries
+            { new: true }
+        )
+        
         const subjects = await Subject.find({
             teacherAssigned: { $exists: true, $ne: [] },
         })
@@ -248,7 +261,7 @@ export const removeAssignedTecher = async(req,res) => {
         const teacher = await User.findOne({email:email});
         if(!teacher || teacher?.accountType !== "teacher"){
             return res.status(400).json({
-                message : "Teacher not fount",
+                message : "Teacher not found",
                 success : false
             })
         }

@@ -20,6 +20,10 @@ const submissionSchema = mongoose.Schema({
         required : true,
         enum : ["pending","completed"],
         default : "pending"
+    },
+    submissiondate : {
+        type : Date,
+        default : Date.now
     }
 })
 

@@ -13,6 +13,8 @@ export const getAssignedSubjectList = () => {
             if (res?.data?.success) {
                 toast.success(res?.data?.message);
                 dispatch(setAssignedSubjectList(res?.data?.data));
+                // console.log(res?.data?.data);
+                // return res?.data?.data
             }
         } catch (error) {
             console.error("Failed to fetch subjects:", error);

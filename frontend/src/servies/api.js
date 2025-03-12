@@ -34,6 +34,9 @@ export const adminEndpoints = {
 //teacher endpoints
 export const teacherEndpoints = {
     fetchAssignedSubject : `${BASE_URL}/teacher/fetch-subject`,
+    getEvaluationData : `${BASE_URL}/teacher/evaluation-data/`,
+    saveEvaluation : `${BASE_URL}/teacher/evaluate-submission-save/`,
+    submitEvaluation : `${BASE_URL}/teacher/evaluate-submission-submit/`,
 }
 
 //student endpoints

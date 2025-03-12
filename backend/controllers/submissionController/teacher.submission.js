@@ -1,7 +1,7 @@
 import Subject from "../../models/subject.js";
 import User from '../../models/user.js'
 import Submission from "../../models/submission.js";
-import submission from "../../models/submission.js";
+import Evaluation from "../../models/evaluation.js";
 
 export const fetchAssignedSubject = async(req,res) => {
     try {
@@ -21,9 +21,10 @@ export const fetchAssignedSubject = async(req,res) => {
             })
         }
 
-        //find subject in which the teacher is assigned
-        const subjectAssigned = await Subject.find({ teacherAssigned: { $in: [id] } });
-
+        //find subjects in which the teacher is assigned and include teacher assigned
+        const subjectAssigned = await Subject.find({ teacherAssigned: { $in: [id] } }).select("-teacherAssigned"); // Exclude teacherAssigned field;
+        // console.log(subjectAssigned);
+        
         if(subjectAssigned.length == 0){
             return res.status(400).json({
                 message: "No Subject Assigned",
@@ -33,12 +34,32 @@ export const fetchAssignedSubject = async(req,res) => {
 
         const allSubject = await Promise.all(
             subjectAssigned.map(async (sub) => {
-                const allStudent = await Submission.find({ subjectId: sub?._id}).populate("studentId");
-                return { ...sub.toObject(), submission: allStudent }; // Convert sub to object & add submission
+                const allStudent = await Submission.find({ subjectId: sub?._id })
+                    .populate("studentId") // Populate student details
+                    .lean(); // Convert Mongoose objects to plain JSON
+        
+                // Fetch evaluations for all submissions in this subject
+                const submissionIds = allStudent.map((sub) => sub._id);
+                const evaluations = await Evaluation.find({ submissionId: { $in: submissionIds } }).lean();
+        
+                // Attach evaluation status inside studentId
+                const updatedSubmissions = allStudent.map((submission) => {
+                    const evaluation = evaluations.find((e) => String(e.submissionId) === String(submission._id));
+                    return {
+                        ...submission,
+                        studentId: {
+                            ...submission.studentId,
+                            evaluated: evaluation ? evaluation : "pending", // Mark as 'completed' if evaluation exists
+                        },
+                    };
+                });
+        
+                return { ...sub.toObject(), submission: updatedSubmissions };
             })
         );
+        
 
-        console.log(allSubject);
+        // console.log(allSubject);
         
         
         return res.status(200).json({

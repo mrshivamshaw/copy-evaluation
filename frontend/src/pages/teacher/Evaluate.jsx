@@ -1,206 +1,337 @@
-import React from "react"
+import React, { useState, useRef, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import axios from "axios";
+import { Document, Page, pdfjs } from "react-pdf";
+import Header from "../../components/Header";
+import { toast } from "react-hot-toast";
+import { apiConneector } from "../../servies/apiConnector";
+import { teacherEndpoints } from "../../servies/api";
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@4.8.69/build/pdf.worker.min.mjs`
 
-import { useState, useRef, useEffect } from "react"
-import { useNavigate, useParams } from "react-router-dom"
-import Header from "../../components/Header"
 
 export default function EvaluatePage() {
-  const navigate = useNavigate()
-  const { id } = useParams()
-  // Replace the marks state with these states for dynamic sections and questions
-  const [sections, setSections] = useState([
-    {
-      id: "1",
-      name: "Section 1",
-      questions: [
-        { id: "1.1", number: "I", marks: "", maxMarks: "1", notAttempted: false },
-        { id: "1.2", number: "II", marks: "", maxMarks: "1", notAttempted: false },
-        { id: "1.3", number: "III", marks: "", maxMarks: "1", notAttempted: false },
-      ],
-    },
-  ])
-  const [showSectionControls, setShowSectionControls] = useState(false)
-  const [newSectionName, setNewSectionName] = useState("")
-  const [editingSectionId, setEditingSectionId] = useState(null)
-  const [newQuestionCount, setNewQuestionCount] = useState(1)
+  const navigate = useNavigate();
+  const { id } = useParams(); // submission ID
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [evaluationData, setEvaluationData] = useState(null);
+  const [sections, setSections] = useState([]);
+  const [showSectionControls, setShowSectionControls] = useState(false);
+  const [newSectionName, setNewSectionName] = useState("");
+  const [editingSectionId, setEditingSectionId] = useState(null);
+  const [newQuestionCount, setNewQuestionCount] = useState(1);
 
-  const [totalMarks, setTotalMarks] = useState("0")
-  const [maxMarks, setMaxMarks] = useState("0")
-  const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages] = useState(22)
-  const [zoom, setZoom] = useState(100)
-  const [isDrawing, setIsDrawing] = useState(false)
-  const [penColor, setPenColor] = useState("#FF0000") // Red pen by default
-  const [penSize, setPenSize] = useState(3)
+  const [totalMarks, setTotalMarks] = useState("0");
+  const [maxMarks, setMaxMarks] = useState("0");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [numPages, setNumPages] = useState(null);
+  const [zoom, setZoom] = useState(100);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [penColor, setPenColor] = useState("#FF0000"); // Red pen by default
+  const [penSize, setPenSize] = useState(3);
+  const [pdfUrl, setPdfUrl] = useState(null);
 
-  const canvasRef = useRef(null)
-  const contextRef = useRef(null)
-  const pdfCanvasRef = useRef(null)
+  const canvasRef = useRef(null);
+  const contextRef = useRef(null);
+  const annotationLayerRef = useRef({});
+  const pdfContainerRef = useRef(null);
 
-  // Initialize canvas for PDF and annotations
+  // Fetch evaluation data
   useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const response = await apiConneector("get",teacherEndpoints?.getEvaluationData + id);
+        const { submission, evaluation, isNewEvaluation } = response.data;
+        
+        // Set PDF URL
+        setPdfUrl(submission.pdfLink);
+        
+        // Set sections based on evaluation data
+        setSections(evaluation.sections || []);
+        
+        // Set metadata
+        setTotalMarks(evaluation.totalMarks.toString());
+        setMaxMarks(evaluation.maxMarks.toString());
+        
+        if (evaluation.metadata) {
+          setCurrentPage(evaluation.metadata.currentPage || 1);
+          setTotalPages(evaluation.metadata.totalPages || 1);
+        }
+        
+        // Store the full evaluation data for later use
+        setEvaluationData({
+          submission,
+          evaluation,
+          isNewEvaluation
+        });
+        
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching evaluation data:", error);
+        toast.error("Failed to load evaluation data");
+        setLoading(false);
+      }
+    };
 
-    // Set canvas dimensions
-    canvas.width = 800
-    canvas.height = 1100
+    fetchData();
+  }, [id]);
 
-    // Get context and set default styles
-    const ctx = canvas.getContext("2d")
-    if (!ctx) return
-
-    ctx.lineCap = "round"
-    ctx.lineJoin = "round"
-    ctx.strokeStyle = penColor
-    ctx.lineWidth = penSize
-    contextRef.current = ctx
-
-    // Draw sample PDF content
-    drawSamplePdf()
-  }, [penColor, penSize])
+  // Update the useEffect for canvas initialization
+  // Update the useEffect for canvas initialization
+// Replace your useEffect for canvas initialization with this:
+useEffect(() => {
+  // Initialize annotation layers object if it doesn't exist
+  if (!annotationLayerRef.current) {
+    annotationLayerRef.current = {};
+  }
+  
+  // Only proceed if canvas exists and PDF has loaded
+  const canvas = canvasRef.current;
+  if (!canvas || !pdfUrl) return;
+  
+  // Set default canvas dimensions (will be updated when PDF renders)
+  canvas.width = 800;
+  canvas.height = 1100;
+  
+  // Get context and set default styles
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.strokeStyle = penColor;
+  ctx.lineWidth = penSize;
+  contextRef.current = ctx;
+  
+  // Make sure we have an annotation layer for the current page
+  if (!annotationLayerRef.current[currentPage]) {
+    const newCanvas = document.createElement('canvas');
+    newCanvas.width = canvas.width;
+    newCanvas.height = canvas.height;
+    annotationLayerRef.current[currentPage] = newCanvas;
+  }
+}, [pdfUrl, canvasRef.current, currentPage]);
 
   // Update pen style when color or size changes
   useEffect(() => {
-    if (!contextRef.current) return
-    contextRef.current.strokeStyle = penColor
-    contextRef.current.lineWidth = penSize
-  }, [penColor, penSize])
+    if (!contextRef.current) return;
+    contextRef.current.strokeStyle = penColor;
+    contextRef.current.lineWidth = penSize;
+  }, [penColor, penSize]);
 
-  // Draw a sample PDF for demonstration
-  const drawSamplePdf = () => {
-    const pdfCanvas = pdfCanvasRef.current
-    if (!pdfCanvas) return
+  // Calculate total marks whenever sections change
+  useEffect(() => {
+    const { total, max } = calculateTotalMarks();
+    setTotalMarks(total.toString());
+    setMaxMarks(max.toString());
+  }, [sections]);
 
-    const ctx = pdfCanvas.getContext("2d")
-    if (!ctx) return
-
-    // Set canvas dimensions
-    pdfCanvas.width = 800
-    pdfCanvas.height = 1100
-
-    // Fill with white background
-    ctx.fillStyle = "#ffffff"
-    ctx.fillRect(0, 0, pdfCanvas.width, pdfCanvas.height)
-
-    // Draw header
-    ctx.fillStyle = "#000000"
-    ctx.font = "24px Arial"
-    ctx.textAlign = "center"
-    ctx.fillText("Design and Analysis of Algorithm", pdfCanvas.width / 2, 50)
-
-    ctx.font = "18px Arial"
-    ctx.fillText("End Semester Examination - 2025", pdfCanvas.width / 2, 80)
-
-    // Draw student info
-    ctx.font = "14px Arial"
-    ctx.textAlign = "left"
-    ctx.fillText("Student ID: CS2101", 50, 120)
-    ctx.fillText("Name: John Doe", 50, 140)
-
-    // Draw question sections
-    ctx.font = "16px Arial"
-    ctx.fillText("Question 1:", 50, 180)
-
-    ctx.font = "14px Arial"
-    ctx.fillText("Explain the time complexity of the following algorithms:", 70, 210)
-
-    // Draw some sample content
-    const sampleText = [
-      "I. The time complexity of bubble sort is O(n²) because in the worst case,",
-      "   we need to make n iterations, and in each iteration, we perform n-i comparisons.",
-      "",
-      "II. Quick sort has an average time complexity of O(n log n), but in the worst case,",
-      "    it can degrade to O(n²) if the pivot selection is poor.",
-      "",
-      "III. Binary search has a time complexity of O(log n) because in each step,",
-      "     we eliminate half of the remaining elements from consideration.",
-    ]
-
-    let y = 240
-    for (const line of sampleText) {
-      ctx.fillText(line, 70, y)
-      y += 20
+  // Document load handler
+  const onDocumentLoadSuccess = ({ numPages }) => {
+    setNumPages(numPages);
+    setTotalPages(numPages);
+    
+    // Update evaluation metadata with total pages if it's a new evaluation
+    if (evaluationData?.isNewEvaluation) {
+      const updatedEvaluation = {
+        ...evaluationData.evaluation,
+        metadata: {
+          ...evaluationData.evaluation.metadata,
+          totalPages: numPages
+        }
+      };
+      
+      setEvaluationData({
+        ...evaluationData,
+        evaluation: updatedEvaluation
+      });
     }
-
-    // Draw page number
-    ctx.font = "12px Arial"
-    ctx.textAlign = "center"
-    ctx.fillText(`Page ${currentPage} of ${totalPages}`, pdfCanvas.width / 2, pdfCanvas.height - 20)
-
-    // Copy the PDF content to the main canvas
-    const mainCanvas = canvasRef.current
-    if (!mainCanvas) return
-
-    const mainCtx = mainCanvas.getContext("2d")
-    if (!mainCtx) return
-
-    mainCtx.drawImage(pdfCanvas, 0, 0)
-  }
+  };
 
   // Drawing functions
   const startDrawing = (e) => {
-    if (!contextRef.current) return
-
-    const canvas = canvasRef.current
-    if (!canvas) return
-
-    const rect = canvas.getBoundingClientRect()
-    const x = (e.clientX - rect.left) * (canvas.width / rect.width)
-    const y = (e.clientY - rect.top) * (canvas.height / rect.height)
-
-    contextRef.current.beginPath()
-    contextRef.current.moveTo(x, y)
-    setIsDrawing(true)
-  }
-
+    if (!contextRef.current || !canvasRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    
+    // Calculate the scale factor between actual canvas dimensions and displayed dimensions
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    // Apply scaling to convert browser coordinates to canvas coordinates
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
+    
+    // Begin drawing path
+    contextRef.current.beginPath();
+    contextRef.current.moveTo(x, y);
+    setIsDrawing(true);
+  };
+  
   const draw = (e) => {
-    if (!isDrawing || !contextRef.current) return
-
-    const canvas = canvasRef.current
-    if (!canvas) return
-
-    const rect = canvas.getBoundingClientRect()
-    const x = (e.clientX - rect.left) * (canvas.width / rect.width)
-    const y = (e.clientY - rect.top) * (canvas.height / rect.height)
-
-    contextRef.current.lineTo(x, y)
-    contextRef.current.stroke()
-  }
-
+    if (!isDrawing || !contextRef.current || !canvasRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    
+    // Calculate the scale factor
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    // Apply scaling to convert browser coordinates to canvas coordinates
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
+    
+    // Draw line to current position
+    contextRef.current.lineTo(x, y);
+    contextRef.current.stroke();
+  };
+  
   const stopDrawing = () => {
-    if (!contextRef.current) return
-    contextRef.current.closePath()
-    setIsDrawing(false)
-  }
+    if (!contextRef.current || !canvasRef.current) return;
+    
+    contextRef.current.closePath();
+    setIsDrawing(false);
+    
+    // Save annotations after drawing
+    saveCurrentAnnotations();
+  };
 
+  // Handle PDF page render
+  const onPageRender = ({ canvasContext, viewport }) => {
+    // After PDF renders, we need to restore any annotations for this page
+    if (!canvasRef.current) return;
+    
+    const canvas = canvasRef.current;
+    
+    // Set canvas dimensions to match the PDF page
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    
+    // Initialize annotation layers if needed
+    if (!annotationLayerRef.current) {
+      annotationLayerRef.current = {};
+    }
+    
+    // Create a new empty canvas for this page if it doesn't exist
+    if (!annotationLayerRef.current[currentPage]) {
+      const newCanvas = document.createElement('canvas');
+      newCanvas.width = canvas.width;
+      newCanvas.height = canvas.height;
+      annotationLayerRef.current[currentPage] = newCanvas;
+    }
+    
+    // Clear current canvas
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Restore annotations for this page if they exist
+    const savedCanvas = annotationLayerRef.current[currentPage];
+    if (savedCanvas && savedCanvas.width > 0 && savedCanvas.height > 0) {
+      try {
+        ctx.drawImage(savedCanvas, 0, 0);
+      } catch (error) {
+        console.error("Error restoring annotations:", error);
+      }
+    }
+    
+    // Update context reference
+    contextRef.current = ctx;
+    contextRef.current.lineCap = "round";
+    contextRef.current.lineJoin = "round";
+    contextRef.current.strokeStyle = penColor;
+    contextRef.current.lineWidth = penSize;
+  };
+  
   // Handle zoom
   const handleZoomIn = () => {
-    setZoom((prev) => Math.min(prev + 10, 200))
-  }
+    setZoom((prev) => Math.min(prev + 10, 200));
+  };
+
+  const clearAnnotations = () => {
+    if (canvasRef.current) {
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+      
+      // Clear annotations for this page
+      if (annotationLayerRef.current && annotationLayerRef.current[currentPage]) {
+        try {
+          // Create a fresh canvas for this page
+          const newCanvas = document.createElement('canvas');
+          newCanvas.width = canvas.width;
+          newCanvas.height = canvas.height;
+          annotationLayerRef.current[currentPage] = newCanvas;
+        } catch (error) {
+          console.error("Error clearing annotations:", error);
+        }
+      }
+    }
+  };
 
   const handleZoomOut = () => {
-    setZoom((prev) => Math.max(prev - 10, 50))
-  }
+    setZoom((prev) => Math.max(prev - 10, 50));
+  };
 
   // Handle page navigation
   const goToPreviousPage = () => {
     if (currentPage > 1) {
-      setCurrentPage((prev) => prev - 1)
-      // In a real app, you would load the previous page of the PDF
-      drawSamplePdf()
+      // Save current canvas state to annotations before changing the page
+      saveCurrentAnnotations();
+      setCurrentPage((prev) => prev - 1);
     }
-  }
-
+  };
+  
   const goToNextPage = () => {
     if (currentPage < totalPages) {
-      setCurrentPage((prev) => prev + 1)
-      // In a real app, you would load the next page of the PDF
-      drawSamplePdf()
+      // Save current canvas state to annotations before changing the page
+      saveCurrentAnnotations();
+      setCurrentPage((prev) => prev + 1);
     }
-  }
+  };
 
-  // Replace the handleMarkChange function
+  const saveCurrentAnnotations = () => {
+    if (!canvasRef.current) return;
+    
+    try {
+      // Initialize annotation layers if needed
+      if (!annotationLayerRef.current) {
+        annotationLayerRef.current = {};
+      }
+      
+      const canvas = canvasRef.current;
+      
+      // Create a new canvas for this page if it doesn't exist
+      if (!annotationLayerRef.current[currentPage]) {
+        const newCanvas = document.createElement('canvas');
+        newCanvas.width = canvas.width;
+        newCanvas.height = canvas.height;
+        annotationLayerRef.current[currentPage] = newCanvas;
+      }
+      
+      // Copy the current canvas to the annotation layer
+      const savedCanvas = annotationLayerRef.current[currentPage];
+      const pageCtx = savedCanvas.getContext('2d');
+      if (pageCtx) {
+        // Clear previous annotations first
+        pageCtx.clearRect(0, 0, savedCanvas.width, savedCanvas.height);
+        // Copy current canvas to the saved canvas
+        pageCtx.drawImage(canvas, 0, 0);
+      }
+    } catch (error) {
+      console.error("Error saving annotation:", error);
+    }
+  };
+
+  // Handle mark change
   const handleMarkChange = (sectionId, questionId, value) => {
     setSections((prevSections) =>
       prevSections.map((section) =>
@@ -208,15 +339,15 @@ export default function EvaluatePage() {
           ? {
               ...section,
               questions: section.questions.map((question) =>
-                question.id === questionId ? { ...question, marks: value } : question,
+                question.id === questionId ? { ...question, marks: value } : question
               ),
             }
-          : section,
-      ),
-    )
-  }
+          : section
+      )
+    );
+  };
 
-  // Add these new functions for managing sections and questions
+  // Handle not attempted change
   const handleNotAttemptedChange = (sectionId, questionId, checked) => {
     setSections((prevSections) =>
       prevSections.map((section) =>
@@ -226,14 +357,15 @@ export default function EvaluatePage() {
               questions: section.questions.map((question) =>
                 question.id === questionId
                   ? { ...question, notAttempted: checked, marks: checked ? "0" : question.marks }
-                  : question,
+                  : question
               ),
             }
-          : section,
-      ),
-    )
-  }
+          : section
+      )
+    );
+  };
 
+  // Handle max marks change
   const handleMaxMarksChange = (sectionId, questionId, value) => {
     setSections((prevSections) =>
       prevSections.map((section) =>
@@ -241,25 +373,26 @@ export default function EvaluatePage() {
           ? {
               ...section,
               questions: section.questions.map((question) =>
-                question.id === questionId ? { ...question, maxMarks: value } : question,
+                question.id === questionId ? { ...question, maxMarks: value } : question
               ),
             }
-          : section,
-      ),
-    )
-  }
+          : section
+      )
+    );
+  };
 
+  // Section management functions
   const addSection = () => {
-    if (!newSectionName.trim()) return
+    if (!newSectionName.trim()) return;
 
-    const newSectionId = (sections.length + 1).toString()
+    const newSectionId = (sections.length + 1).toString();
     const newQuestions = Array.from({ length: newQuestionCount }, (_, i) => ({
       id: `${newSectionId}.${i + 1}`,
       number: (i + 1).toString(),
       marks: "",
       maxMarks: "1",
       notAttempted: false,
-    }))
+    }));
 
     setSections([
       ...sections,
@@ -268,22 +401,22 @@ export default function EvaluatePage() {
         name: newSectionName,
         questions: newQuestions,
       },
-    ])
+    ]);
 
-    setNewSectionName("")
-    setNewQuestionCount(1)
-    setShowSectionControls(false)
-  }
+    setNewSectionName("");
+    setNewQuestionCount(1);
+    setShowSectionControls(false);
+  };
 
   const removeSection = (sectionId) => {
-    setSections(sections.filter((section) => section.id !== sectionId))
-  }
+    setSections(sections.filter((section) => section.id !== sectionId));
+  };
 
   const addQuestionToSection = (sectionId) => {
     setSections((prevSections) =>
       prevSections.map((section) => {
         if (section.id === sectionId) {
-          const newQuestionId = `${sectionId}.${section.questions.length + 1}`
+          const newQuestionId = `${sectionId}.${section.questions.length + 1}`;
           return {
             ...section,
             questions: [
@@ -296,12 +429,12 @@ export default function EvaluatePage() {
                 notAttempted: false,
               },
             ],
-          }
+          };
         }
-        return section
-      }),
-    )
-  }
+        return section;
+      })
+    );
+  };
 
   const removeQuestionFromSection = (sectionId, questionId) => {
     setSections((prevSections) =>
@@ -310,52 +443,93 @@ export default function EvaluatePage() {
           return {
             ...section,
             questions: section.questions.filter((q) => q.id !== questionId),
-          }
+          };
         }
-        return section
-      }),
-    )
-  }
+        return section;
+      })
+    );
+  };
 
   const updateSectionName = (sectionId, newName) => {
     setSections((prevSections) =>
-      prevSections.map((section) => (section.id === sectionId ? { ...section, name: newName } : section)),
-    )
-    setEditingSectionId(null)
-  }
+      prevSections.map((section) => 
+        (section.id === sectionId ? { ...section, name: newName } : section)
+      )
+    );
+    setEditingSectionId(null);
+  };
 
-  // Replace the totalMarks state calculation
+  // Calculate total marks
   const calculateTotalMarks = () => {
-    let total = 0
-    let max = 0
+    let total = 0;
+    let max = 0;
 
     sections.forEach((section) => {
       section.questions.forEach((question) => {
         if (question.marks && !question.notAttempted) {
-          total += Number.parseInt(question.marks, 10)
+          total += parseFloat(question.marks) || 0;
         }
-        max += Number.parseInt(question.maxMarks, 10)
-      })
-    })
+        max += parseFloat(question.maxMarks) || 0;
+      });
+    });
 
-    return { total, max }
-  }
+    return { total, max };
+  };
 
-  const { total: totalMarksCalculated, max: maxMarksCalculated } = calculateTotalMarks()
-  useEffect(() => {
-    setTotalMarks(totalMarksCalculated.toString())
-    setMaxMarks(maxMarksCalculated.toString())
-  }, [sections])
+  // Handle save
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      
+      const payload = {
+        sections,
+        totalMarks: parseFloat(totalMarks),
+        maxMarks: parseFloat(maxMarks),
+        currentPage
+      };
+      
+      const response = await apiConneector("post", teacherEndpoints?.saveEvaluation + id, payload);
+      
+      toast.success("Evaluation saved successfully");
+      setSaving(false);
+    } catch (error) {
+      console.error("Error saving evaluation:", error);
+      toast.error("Failed to save evaluation");
+      setSaving(false);
+    }
+  };
 
-  const handleSave = () => {
-    // In a real app, you would save the evaluation to the backend
-    alert("Evaluation saved successfully!")
-  }
+  // Handle submit
+  const handleSubmit = async () => {
+    try {
+      setSubmitting(true);
+      
+      const payload = {
+        sections,
+        totalMarks: parseFloat(totalMarks),
+        maxMarks: parseFloat(maxMarks),
+      };
+      
+      const response = await apiConneector("post", teacherEndpoints?.submitEvaluation + id, payload);
+      
+      toast.success("Evaluation submitted successfully");
+      setSubmitting(false);
+      navigate("/teacher/dashboard");
+    } catch (error) {
+      console.error("Error submitting evaluation:", error);
+      toast.error("Failed to submit evaluation");
+      setSubmitting(false);
+    }
+  };
 
-  const handleSubmit = () => {
-    // In a real app, you would submit the evaluation to the backend
-    alert("Evaluation submitted successfully!")
-    navigate("/teacher/dashboard")
+  
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-xl">Loading evaluation data...</div>
+      </div>
+    );
   }
 
   return (
@@ -378,27 +552,36 @@ export default function EvaluatePage() {
             </svg>
           </button>
           <h1 className="text-2xl font-bold text-blue-800">
-            Subject: <span className="text-blue-600">4416 - Design and Analysis of Algorithm(PCC-CS404)</span>
+            Subject: <span className="text-blue-600">
+              {evaluationData?.submission?.subjectId?.code} - {evaluationData?.submission?.subjectId?.name}
+            </span>
           </h1>
         </div>
 
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-blue-800 p-4 text-white">
           <div className="flex items-center gap-4">
             <div>
-              <span className="text-sm font-medium">Guidelines</span>
+              <span className="text-sm font-medium">Student: {evaluationData?.submission?.studentId?.firstName + " " + evaluationData?.submission?.studentId?.lastName || "N/A"}</span>
             </div>
             <div>
-              <span className="text-sm font-medium">9U5uqcmn</span>
+              <span className="text-sm font-medium">ID: {evaluationData?.submission?.studentId?._id || "N/A"}</span>
             </div>
             <div>
-              <span className="text-sm font-medium">Start at: 14:08:37</span>
+              <span className="text-sm font-medium">
+                Start at: {new Date(evaluationData?.evaluation?.metadata?.startTime).toLocaleTimeString() || "N/A"}
+              </span>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
             <button className="rounded-md bg-gray-200 py-1 px-3 text-sm font-medium text-gray-800 hover:bg-gray-300">
               HE Instruction
             </button>
-            <button className="rounded-md bg-green-600 py-1 px-3 text-sm font-medium text-white hover:bg-green-700">
+            <a 
+              href={evaluationData?.submission?.pdfLink} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="rounded-md bg-green-600 py-1 px-3 text-sm font-medium text-white hover:bg-green-700"
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="mr-1 inline h-4 w-4"
@@ -413,50 +596,64 @@ export default function EvaluatePage() {
                   d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
                 />
               </svg>
-              Download Question Paper
-            </button>
+              Download Answer Script
+            </a>
             <button className="rounded-md bg-orange-500 py-1 px-3 text-sm font-medium text-white hover:bg-orange-600">
               Problem Script
             </button>
             <button
-              className="rounded-md bg-green-600 py-1 px-3 text-sm font-medium text-white hover:bg-green-700"
+              className={`rounded-md bg-green-600 py-1 px-3 text-sm font-medium text-white hover:bg-green-700 ${saving ? 'opacity-75' : ''}`}
               onClick={handleSave}
+              disabled={saving}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="mr-1 inline h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
-                />
-              </svg>
-              Save
+              {saving ? (
+                <span>Saving...</span>
+              ) : (
+                <>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="mr-1 inline h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
+                    />
+                  </svg>
+                  Save
+                </>
+              )}
             </button>
             <button
-              className="rounded-md bg-red-600 py-1 px-3 text-sm font-medium text-white hover:bg-red-700"
+              className={`rounded-md bg-red-600 py-1 px-3 text-sm font-medium text-white hover:bg-red-700 ${submitting ? 'opacity-75' : ''}`}
               onClick={handleSubmit}
+              disabled={submitting}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="mr-1 inline h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                />
-              </svg>
-              Lock & Submit
+              {submitting ? (
+                <span>Submitting...</span>
+              ) : (
+                <>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="mr-1 inline h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                    />
+                  </svg>
+                  Lock & Submit
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -467,14 +664,13 @@ export default function EvaluatePage() {
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
           <div className="rounded-lg border bg-white shadow-sm lg:col-span-1">
-            {/* Replace the marks display section in the return statement with this */}
             <div className="p-4">
               <div className="mb-4 flex items-center justify-between">
                 <span className="text-sm font-medium">
                   Total Questions: {sections.reduce((acc, section) => acc + section.questions.length, 0)}
                 </span>
                 <span className="text-sm font-medium">
-                  Marks: {totalMarksCalculated}/{maxMarksCalculated}
+                  Marks: {totalMarks}/{maxMarks}
                 </span>
               </div>
 
@@ -506,7 +702,7 @@ export default function EvaluatePage() {
                       type="number"
                       min="1"
                       value={newQuestionCount}
-                      onChange={(e) => setNewQuestionCount(Number.parseInt(e.target.value) || 1)}
+                      onChange={(e) => setNewQuestionCount(parseInt(e.target.value) || 1)}
                       className="w-full p-1 text-sm border rounded"
                     />
                   </div>
@@ -524,7 +720,7 @@ export default function EvaluatePage() {
                 </div>
               )}
 
-              <div className="space-y-4">
+              <div className="space-y-4 max-h-[calc(100vh-300px)] overflow-y-auto">
                 {sections.map((section) => (
                   <div key={section.id} className="border rounded-md overflow-hidden">
                     <div className="bg-gray-100 p-2 flex justify-between items-center">
@@ -577,6 +773,7 @@ export default function EvaluatePage() {
                             <input
                               type="number"
                               min="0"
+                              step="0.5"
                               value={question.marks}
                               onChange={(e) => handleMarkChange(section.id, question.id, e.target.value)}
                               disabled={question.notAttempted}
@@ -596,7 +793,8 @@ export default function EvaluatePage() {
                           <div>
                             <input
                               type="number"
-                              min="1"
+                              min="0.5"
+                              step="0.5"
                               value={question.maxMarks}
                               onChange={(e) => handleMaxMarksChange(section.id, question.id, e.target.value)}
                               className="h-8 w-16 rounded border border-gray-300 px-2"
@@ -622,19 +820,35 @@ export default function EvaluatePage() {
           <div className="rounded-lg border bg-white shadow-sm lg:col-span-3">
             <div className="p-0">
               <div className="relative">
-                {/* Hidden canvas for PDF rendering */}
-                <canvas ref={pdfCanvasRef} className="hidden" />
-
-                {/* Main canvas for annotations */}
                 <div className="flex items-center justify-center bg-gray-100 p-2">
                   <div
+                    ref={pdfContainerRef}
                     style={{
                       width: `${(800 * zoom) / 100}px`,
                       height: `${(1100 * zoom) / 100}px`,
+                      position: 'relative',
                       overflow: "auto",
+                      border: '1px solid #ccc',
+                      backgroundColor: 'white'
                     }}
-                    className="border border-gray-300 bg-white"
                   >
+                    {pdfUrl && (
+                      <Document
+                        file={pdfUrl}
+                        onLoadSuccess={onDocumentLoadSuccess}
+                        loading={<div className="flex justify-center items-center h-full">Loading PDF...</div>}
+                        error={<div className="flex justify-center items-center h-full">Failed to load PDF</div>}
+                      >
+                        <Page
+                          pageNumber={currentPage}
+                          width={(800 * zoom) / 100}
+                          renderAnnotationLayer={false}
+                          renderTextLayer={false}
+                          onRenderSuccess={onPageRender}
+                        />
+                      </Document>
+                    )}
+                    
                     <canvas
                       ref={canvasRef}
                       onMouseDown={startDrawing}
@@ -642,9 +856,14 @@ export default function EvaluatePage() {
                       onMouseUp={stopDrawing}
                       onMouseLeave={stopDrawing}
                       style={{
-                        width: "100%",
-                        height: "100%",
-                        cursor: "crosshair",
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        cursor: 'crosshair',
+                        zIndex: 10,
+                        pointerEvents: 'all'
                       }}
                     />
                   </div>
@@ -653,7 +872,7 @@ export default function EvaluatePage() {
                 <div className="flex items-center justify-between border-t bg-blue-50 p-2">
                   <div className="flex items-center gap-2">
                     <button
-                      className="rounded-md border border-gray-300 p-2 hover:bg-gray-100"
+                      className="rounded-md border border-gray-300 p-2  hover:bg-gray-100"
                       onClick={goToPreviousPage}
                     >
                       <svg
@@ -719,22 +938,26 @@ export default function EvaluatePage() {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <button className="rounded-md border border-gray-300 p-2 hover:bg-gray-100">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                        />
-                      </svg>
-                    </button>
+                  <button 
+                    className="rounded-md border border-gray-300 p-2 hover:bg-gray-100"
+                    onClick={clearAnnotations}
+                    title="Clear annotations"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
+                  </button>
                     <div className="flex items-center gap-1">
                       <button
                         className={`rounded-md border p-2 hover:bg-gray-100 ${penColor === "#FF0000" ? "bg-gray-200" : ""}`}
@@ -765,4 +988,3 @@ export default function EvaluatePage() {
     </div>
   )
 }
-
