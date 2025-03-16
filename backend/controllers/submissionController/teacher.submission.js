@@ -41,7 +41,7 @@ export const fetchAssignedSubject = async(req,res) => {
                 // Fetch evaluations for all submissions in this subject
                 const submissionIds = allStudent.map((sub) => sub._id);
                 const evaluations = await Evaluation.find({ submissionId: { $in: submissionIds } }).lean();
-        
+                
                 // Attach evaluation status inside studentId
                 const updatedSubmissions = allStudent.map((submission) => {
                     const evaluation = evaluations.find((e) => String(e.submissionId) === String(submission._id));
@@ -59,7 +59,7 @@ export const fetchAssignedSubject = async(req,res) => {
         );
         
 
-        // console.log(allSubject);
+        console.log(allSubject);
         
         
         return res.status(200).json({

@@ -6,6 +6,7 @@ import Header from "../../components/Header";
 import { toast } from "react-hot-toast";
 import { apiConneector } from "../../servies/apiConnector";
 import { teacherEndpoints } from "../../servies/api";
+import { PDFDocument, rgb } from 'pdf-lib';
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@4.8.69/build/pdf.worker.min.mjs`
 
 
@@ -32,6 +33,8 @@ export default function EvaluatePage() {
   const [penColor, setPenColor] = useState("#FF0000"); // Red pen by default
   const [penSize, setPenSize] = useState(3);
   const [pdfUrl, setPdfUrl] = useState(null);
+  const [isDrawingStroke, setIsDrawingStroke] = useState(false); // Active drawing state
+
 
   const canvasRef = useRef(null);
   const contextRef = useRef(null);
@@ -79,48 +82,7 @@ export default function EvaluatePage() {
     fetchData();
   }, [id]);
 
-  // Update the useEffect for canvas initialization
-  // Update the useEffect for canvas initialization
-// Replace your useEffect for canvas initialization with this:
-useEffect(() => {
-  // Initialize annotation layers object if it doesn't exist
-  if (!annotationLayerRef.current) {
-    annotationLayerRef.current = {};
-  }
-  
-  // Only proceed if canvas exists and PDF has loaded
-  const canvas = canvasRef.current;
-  if (!canvas || !pdfUrl) return;
-  
-  // Set default canvas dimensions (will be updated when PDF renders)
-  canvas.width = 800;
-  canvas.height = 1100;
-  
-  // Get context and set default styles
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return;
-  
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
-  ctx.strokeStyle = penColor;
-  ctx.lineWidth = penSize;
-  contextRef.current = ctx;
-  
-  // Make sure we have an annotation layer for the current page
-  if (!annotationLayerRef.current[currentPage]) {
-    const newCanvas = document.createElement('canvas');
-    newCanvas.width = canvas.width;
-    newCanvas.height = canvas.height;
-    annotationLayerRef.current[currentPage] = newCanvas;
-  }
-}, [pdfUrl, canvasRef.current, currentPage]);
 
-  // Update pen style when color or size changes
-  useEffect(() => {
-    if (!contextRef.current) return;
-    contextRef.current.strokeStyle = penColor;
-    contextRef.current.lineWidth = penSize;
-  }, [penColor, penSize]);
 
   // Calculate total marks whenever sections change
   useEffect(() => {
@@ -129,208 +91,7 @@ useEffect(() => {
     setMaxMarks(max.toString());
   }, [sections]);
 
-  // Document load handler
-  const onDocumentLoadSuccess = ({ numPages }) => {
-    setNumPages(numPages);
-    setTotalPages(numPages);
-    
-    // Update evaluation metadata with total pages if it's a new evaluation
-    if (evaluationData?.isNewEvaluation) {
-      const updatedEvaluation = {
-        ...evaluationData.evaluation,
-        metadata: {
-          ...evaluationData.evaluation.metadata,
-          totalPages: numPages
-        }
-      };
-      
-      setEvaluationData({
-        ...evaluationData,
-        evaluation: updatedEvaluation
-      });
-    }
-  };
-
-  // Drawing functions
-  const startDrawing = (e) => {
-    if (!contextRef.current || !canvasRef.current) return;
-    
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    
-    // Calculate the scale factor between actual canvas dimensions and displayed dimensions
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    
-    // Apply scaling to convert browser coordinates to canvas coordinates
-    const x = (e.clientX - rect.left) * scaleX;
-    const y = (e.clientY - rect.top) * scaleY;
-    
-    // Begin drawing path
-    contextRef.current.beginPath();
-    contextRef.current.moveTo(x, y);
-    setIsDrawing(true);
-  };
   
-  const draw = (e) => {
-    if (!isDrawing || !contextRef.current || !canvasRef.current) return;
-    
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    
-    // Calculate the scale factor
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    
-    // Apply scaling to convert browser coordinates to canvas coordinates
-    const x = (e.clientX - rect.left) * scaleX;
-    const y = (e.clientY - rect.top) * scaleY;
-    
-    // Draw line to current position
-    contextRef.current.lineTo(x, y);
-    contextRef.current.stroke();
-  };
-  
-  const stopDrawing = () => {
-    if (!contextRef.current || !canvasRef.current) return;
-    
-    contextRef.current.closePath();
-    setIsDrawing(false);
-    
-    // Save annotations after drawing
-    saveCurrentAnnotations();
-  };
-
-  // Handle PDF page render
-  const onPageRender = ({ canvasContext, viewport }) => {
-    // After PDF renders, we need to restore any annotations for this page
-    if (!canvasRef.current) return;
-    
-    const canvas = canvasRef.current;
-    
-    // Set canvas dimensions to match the PDF page
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-    
-    // Initialize annotation layers if needed
-    if (!annotationLayerRef.current) {
-      annotationLayerRef.current = {};
-    }
-    
-    // Create a new empty canvas for this page if it doesn't exist
-    if (!annotationLayerRef.current[currentPage]) {
-      const newCanvas = document.createElement('canvas');
-      newCanvas.width = canvas.width;
-      newCanvas.height = canvas.height;
-      annotationLayerRef.current[currentPage] = newCanvas;
-    }
-    
-    // Clear current canvas
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Restore annotations for this page if they exist
-    const savedCanvas = annotationLayerRef.current[currentPage];
-    if (savedCanvas && savedCanvas.width > 0 && savedCanvas.height > 0) {
-      try {
-        ctx.drawImage(savedCanvas, 0, 0);
-      } catch (error) {
-        console.error("Error restoring annotations:", error);
-      }
-    }
-    
-    // Update context reference
-    contextRef.current = ctx;
-    contextRef.current.lineCap = "round";
-    contextRef.current.lineJoin = "round";
-    contextRef.current.strokeStyle = penColor;
-    contextRef.current.lineWidth = penSize;
-  };
-  
-  // Handle zoom
-  const handleZoomIn = () => {
-    setZoom((prev) => Math.min(prev + 10, 200));
-  };
-
-  const clearAnnotations = () => {
-    if (canvasRef.current) {
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-      }
-      
-      // Clear annotations for this page
-      if (annotationLayerRef.current && annotationLayerRef.current[currentPage]) {
-        try {
-          // Create a fresh canvas for this page
-          const newCanvas = document.createElement('canvas');
-          newCanvas.width = canvas.width;
-          newCanvas.height = canvas.height;
-          annotationLayerRef.current[currentPage] = newCanvas;
-        } catch (error) {
-          console.error("Error clearing annotations:", error);
-        }
-      }
-    }
-  };
-
-  const handleZoomOut = () => {
-    setZoom((prev) => Math.max(prev - 10, 50));
-  };
-
-  // Handle page navigation
-  const goToPreviousPage = () => {
-    if (currentPage > 1) {
-      // Save current canvas state to annotations before changing the page
-      saveCurrentAnnotations();
-      setCurrentPage((prev) => prev - 1);
-    }
-  };
-  
-  const goToNextPage = () => {
-    if (currentPage < totalPages) {
-      // Save current canvas state to annotations before changing the page
-      saveCurrentAnnotations();
-      setCurrentPage((prev) => prev + 1);
-    }
-  };
-
-  const saveCurrentAnnotations = () => {
-    if (!canvasRef.current) return;
-    
-    try {
-      // Initialize annotation layers if needed
-      if (!annotationLayerRef.current) {
-        annotationLayerRef.current = {};
-      }
-      
-      const canvas = canvasRef.current;
-      
-      // Create a new canvas for this page if it doesn't exist
-      if (!annotationLayerRef.current[currentPage]) {
-        const newCanvas = document.createElement('canvas');
-        newCanvas.width = canvas.width;
-        newCanvas.height = canvas.height;
-        annotationLayerRef.current[currentPage] = newCanvas;
-      }
-      
-      // Copy the current canvas to the annotation layer
-      const savedCanvas = annotationLayerRef.current[currentPage];
-      const pageCtx = savedCanvas.getContext('2d');
-      if (pageCtx) {
-        // Clear previous annotations first
-        pageCtx.clearRect(0, 0, savedCanvas.width, savedCanvas.height);
-        // Copy current canvas to the saved canvas
-        pageCtx.drawImage(canvas, 0, 0);
-      }
-    } catch (error) {
-      console.error("Error saving annotation:", error);
-    }
-  };
-
   // Handle mark change
   const handleMarkChange = (sectionId, questionId, value) => {
     setSections((prevSections) =>
@@ -477,53 +238,381 @@ useEffect(() => {
   };
 
   // Handle save
-  const handleSave = async () => {
-    try {
-      setSaving(true);
+  // const handleSave = async () => {
+  //   try {
+  //     setSaving(true);
       
-      const payload = {
-        sections,
-        totalMarks: parseFloat(totalMarks),
-        maxMarks: parseFloat(maxMarks),
-        currentPage
-      };
+  //     const payload = {
+  //       sections,
+  //       totalMarks: parseFloat(totalMarks),
+  //       maxMarks: parseFloat(maxMarks),
+  //       currentPage
+  //     };
       
-      const response = await apiConneector("post", teacherEndpoints?.saveEvaluation + id, payload);
+  //     const response = await apiConneector("post", teacherEndpoints?.saveEvaluation + id, payload);
       
-      toast.success("Evaluation saved successfully");
-      setSaving(false);
-    } catch (error) {
-      console.error("Error saving evaluation:", error);
-      toast.error("Failed to save evaluation");
-      setSaving(false);
-    }
-  };
+  //     toast.success("Evaluation saved successfully");
+  //     setSaving(false);
+  //   } catch (error) {
+  //     console.error("Error saving evaluation:", error);
+  //     toast.error("Failed to save evaluation");
+  //     setSaving(false);
+  //   }
+  // };
 
   // Handle submit
-  const handleSubmit = async () => {
-    try {
-      setSubmitting(true);
+  // const handleSubmit = async () => {
+  //   try {
+  //     setSubmitting(true);
       
-      const payload = {
-        sections,
-        totalMarks: parseFloat(totalMarks),
-        maxMarks: parseFloat(maxMarks),
-      };
+  //     const payload = {
+  //       sections,
+  //       totalMarks: parseFloat(totalMarks),
+  //       maxMarks: parseFloat(maxMarks),
+  //     };
       
-      const response = await apiConneector("post", teacherEndpoints?.submitEvaluation + id, payload);
+  //     const response = await apiConneector("post", teacherEndpoints?.submitEvaluation + id, payload);
       
-      toast.success("Evaluation submitted successfully");
-      setSubmitting(false);
-      navigate("/teacher/dashboard");
-    } catch (error) {
-      console.error("Error submitting evaluation:", error);
-      toast.error("Failed to submit evaluation");
-      setSubmitting(false);
-    }
-  };
+  //     toast.success("Evaluation submitted successfully");
+  //     setSubmitting(false);
+  //     navigate("/teacher/dashboard");
+  //   } catch (error) {
+  //     console.error("Error submitting evaluation:", error);
+  //     toast.error("Failed to submit evaluation");
+  //     setSubmitting(false);
+  //   }
+  // };
 
   
+// Add these functions to your component
 
+// Function to handle PDF load success
+function onDocumentLoadSuccess({ numPages: nextNumPages }) {
+  setNumPages(nextNumPages);
+  setTotalPages(nextNumPages);
+  
+  // Initialize the annotation layers for each page if not already done
+  if (Object.keys(annotationLayerRef.current).length === 0) {
+    const layers = {};
+    for (let i = 1; i <= nextNumPages; i++) {
+      layers[i] = [];
+    }
+    annotationLayerRef.current = layers;
+  }
+}
+
+// Initialize the canvas for drawing
+useEffect(() => {
+  if (!canvasRef.current) return;
+  
+  const canvas = canvasRef.current;
+  const context = canvas.getContext("2d");
+  
+  // Set canvas to be responsive to page dimensions
+  if (pdfContainerRef.current) {
+    const containerRect = pdfContainerRef.current.getBoundingClientRect();
+    canvas.width = containerRect.width;
+    canvas.height = containerRect.height;
+  }
+  
+  context.lineCap = "round";
+  context.strokeStyle = penColor;
+  context.lineWidth = penSize;
+  contextRef.current = context;
+  
+  // Draw any saved annotations for this page
+  drawSavedAnnotations();
+}, [canvasRef, currentPage, penColor, penSize, zoom]);
+
+// Initialize the canvas for drawing
+useEffect(() => {
+  if (!canvasRef.current) return;
+  
+  const canvas = canvasRef.current;
+  const context = canvas.getContext("2d");
+  
+  // Set canvas to be responsive to page dimensions
+  if (pdfContainerRef.current) {
+    const containerRect = pdfContainerRef.current.getBoundingClientRect();
+    canvas.width = containerRect.width;
+    canvas.height = containerRect.height;
+  }
+  
+  context.lineCap = "round";
+  context.strokeStyle = penColor;
+  context.lineWidth = penSize;
+  contextRef.current = context;
+  
+  // Initialize annotationLayerRef if it doesn't exist
+  if (!annotationLayerRef.current) {
+    annotationLayerRef.current = {};
+  }
+  
+  // Initialize the current page annotations if they don't exist
+  if (!annotationLayerRef.current[currentPage]) {
+    annotationLayerRef.current[currentPage] = [];
+  }
+  
+  // Draw any saved annotations for this page
+  drawSavedAnnotations();
+}, [canvasRef, currentPage, penColor, penSize, zoom]);
+
+// Function to draw saved annotations for the current page
+const drawSavedAnnotations = () => {
+  if (!contextRef.current || !canvasRef.current) return;
+  
+  const annotations = annotationLayerRef.current && annotationLayerRef.current[currentPage] ? 
+                       annotationLayerRef.current[currentPage] : [];
+  const ctx = contextRef.current;
+  
+  // Clear canvas
+  ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+  
+  // Draw each saved path
+  annotations.forEach(path => {
+    if (!path || !path.points || path.points.length < 2) return;
+    
+    ctx.beginPath();
+    ctx.moveTo(path.points[0].x, path.points[0].y);
+    
+    for (let i = 1; i < path.points.length; i++) {
+      ctx.lineTo(path.points[i].x, path.points[i].y);
+    }
+    
+    ctx.strokeStyle = path.color;
+    ctx.lineWidth = path.size;
+    ctx.stroke();
+  });
+};
+
+// Start drawing when mouse is pressed (only if in drawing mode)
+const startDrawing = ({ nativeEvent }) => {
+  if (!isDrawing || !contextRef.current) return; // Add check for contextRef.current
+  
+  // Only start drawing on mouse down (left click)
+  if (nativeEvent.button === 0) {
+    const { offsetX, offsetY } = nativeEvent;
+    contextRef.current.beginPath();
+    contextRef.current.moveTo(offsetX, offsetY);
+    
+    // Start a new path
+    const newPath = {
+      color: penColor,
+      size: penSize,
+      points: [{ x: offsetX, y: offsetY }]
+    };
+    
+    // Store the current path being drawn
+    if (!annotationLayerRef.current) {
+      annotationLayerRef.current = {};
+    }
+    annotationLayerRef.current.currentPath = newPath;
+    
+    // Set active drawing state to true
+    setIsDrawingStroke(true);
+  }
+};
+
+// Draw as mouse moves (only if actively drawing)
+const draw = ({ nativeEvent }) => {
+  if (!isDrawing || !isDrawingStroke || !contextRef.current) return; // Add check for contextRef.current
+  
+  const { offsetX, offsetY } = nativeEvent;
+  contextRef.current.lineTo(offsetX, offsetY);
+  contextRef.current.stroke();
+  
+  // Add point to current path
+  if (annotationLayerRef.current && annotationLayerRef.current.currentPath) {
+    annotationLayerRef.current.currentPath.points.push({ x: offsetX, y: offsetY });
+  }
+};
+
+// Stop drawing when mouse is released
+const stopDrawing = () => {
+  if (!isDrawingStroke || !contextRef.current) return; // Add check for contextRef.current
+  
+  contextRef.current.closePath();
+  
+  // Save the completed path to the current page's annotations
+  if (annotationLayerRef.current && annotationLayerRef.current.currentPath) {
+    if (!annotationLayerRef.current[currentPage]) {
+      annotationLayerRef.current[currentPage] = [];
+    }
+    
+    annotationLayerRef.current[currentPage].push(annotationLayerRef.current.currentPath);
+    delete annotationLayerRef.current.currentPath;
+  }
+  
+  // Set active drawing state to false
+  setIsDrawingStroke(false);
+};
+
+
+
+
+// Toggle drawing mode
+const toggleDrawingMode = () => {
+  setIsDrawing(!isDrawing);
+  // When exiting drawing mode, make sure to redraw all annotations
+  if (isDrawing) {
+    // We're currently in drawing mode and about to exit
+    // Make sure any active stroke is finished
+    if (isDrawingStroke) {
+      stopDrawing();
+    }
+  }
+};
+
+// Make sure to add this effect to ensure annotations remain visible when toggling drawing mode
+useEffect(() => {
+  // This ensures annotations stay visible regardless of drawing mode
+  drawSavedAnnotations();
+}, [isDrawing]);
+
+// Change page - make sure to save annotations when changing pages
+const changePage = (pageNumber) => {
+  if (pageNumber >= 1 && pageNumber <= numPages) {
+    // Finish any active drawing before changing page
+    if (isDrawingStroke) {
+      stopDrawing();
+    }
+    
+    setCurrentPage(pageNumber);
+  }
+};
+
+// Change zoom level
+const changeZoom = (newZoom) => {
+  setZoom(newZoom);
+};
+
+// Modify the handleSubmit function to include annotations
+const handleSubmit = async () => {
+  try {
+    setSubmitting(true);
+    toast.loading("Processing PDF annotations...");
+
+    const pdfResponse = await axios.get(pdfUrl, { responseType: "arraybuffer" });
+    const pdfBytes = pdfResponse.data; // Correct way to access arraybuffer data
+
+    // Load the PDF using pdf-lib
+    const pdfDoc = await PDFDocument.load(pdfBytes);
+    const pages = pdfDoc.getPages();
+
+    // Iterate over annotation layers
+    for (const pageNum of Object.keys(annotationLayerRef.current)) {
+      if (!Array.isArray(annotationLayerRef.current[pageNum]) || 
+          annotationLayerRef.current[pageNum].length === 0) {
+        continue; // Skip pages without annotations
+      }
+
+      const pageIndex = parseInt(pageNum) - 1;
+      const page = pages[pageIndex];
+      if (!page) continue;
+
+      // Get page dimensions
+      const { width, height } = page.getSize();
+
+      // Loop through each annotation path
+      annotationLayerRef.current[pageNum].forEach(path => {
+        if (path.points.length < 2) return;
+
+        // Convert color hex to RGB
+        const { r, g, b } = hexToRgb(path.color); // Destructure the RGB values properly
+
+        // Draw annotation lines
+        for (let i = 0; i < path.points.length - 1; i++) {
+          const start = path.points[i];
+          const end = path.points[i + 1];
+
+          page.drawLine({
+            start: { x: start.x, y: height - start.y },
+            end: { x: end.x, y: height - end.y },
+            thickness: path.size,
+            color: rgb(r / 255, g / 255, b / 255), // Corrected variable usage
+          });
+        }
+      });
+    }
+
+    // Serialize the modified PDF
+    const modifiedPdfBytes = await pdfDoc.save();
+
+    // Convert to Blob/File for upload
+    const modifiedPdfBlob = new Blob([modifiedPdfBytes], { type: 'application/pdf' });
+    const modifiedPdfFile = new File([modifiedPdfBlob], 'annotated_submission.pdf', { type: 'application/pdf' });
+
+    // console.log(formData);
+    // const url = URL.createObjectURL(modifiedPdfFile);
+    // window.open(url, "_blank");
+
+    const formData = new FormData();
+    formData.append("pdf", modifiedPdfFile);
+    formData.append("sections", JSON.stringify(sections)); // Convert array/object to JSON string
+    formData.append("totalMarks", parseFloat(totalMarks));
+    formData.append("maxMarks", parseFloat(maxMarks));
+
+    const response = await apiConneector("post", teacherEndpoints?.submitEvaluation + id, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+
+    toast.dismiss();
+    toast.success("Evaluation submitted successfully");
+    setSubmitting(false);
+    navigate("/teacher/dashboard");
+
+  } catch (error) {
+    console.error("Error submitting evaluation:", error);
+    toast.dismiss();
+    toast.error("Failed to submit evaluation");
+    setSubmitting(false);
+  }
+};
+
+
+
+
+// Helper function to convert hex color to RGB
+function hexToRgb(hex) {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16)
+  } : { r: 0, g: 0, b: 0 };
+}
+
+// Also modify the handleSave function to save annotations
+const handleSave = async () => {
+  try {
+    setSaving(true);
+    
+    // Convert annotations to a format that can be saved
+    const annotationsToSave = {};
+    Object.keys(annotationLayerRef.current).forEach(page => {
+      if (Array.isArray(annotationLayerRef.current[page]) && annotationLayerRef.current[page].length > 0) {
+        annotationsToSave[page] = annotationLayerRef.current[page];
+      }
+    });
+    
+    const payload = {
+      sections,
+      totalMarks: parseFloat(totalMarks),
+      maxMarks: parseFloat(maxMarks),
+      currentPage,
+      annotations: annotationsToSave
+    };
+    
+    const response = await apiConneector("post", teacherEndpoints?.saveEvaluation + id, payload);
+    
+    toast.success("Evaluation saved successfully");
+    setSaving(false);
+  } catch (error) {
+    console.error("Error saving evaluation:", error);
+    toast.error("Failed to save evaluation");
+    setSaving(false);
+  }
+};
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -573,11 +662,12 @@ useEffect(() => {
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button className="rounded-md bg-gray-200 py-1 px-3 text-sm font-medium text-gray-800 hover:bg-gray-300">
+            {/* <button className="rounded-md bg-gray-200 py-1 px-3 text-sm font-medium text-gray-800 hover:bg-gray-300">
               HE Instruction
-            </button>
+            </button> */}
             <a 
-              href={evaluationData?.submission?.pdfLink} 
+              href={`${pdfUrl}?fl_attachment=true`} 
+              download="AnswerScript.pdf"  // Forces file download
               target="_blank" 
               rel="noopener noreferrer"
               className="rounded-md bg-green-600 py-1 px-3 text-sm font-medium text-white hover:bg-green-700"
@@ -601,7 +691,7 @@ useEffect(() => {
             <button className="rounded-md bg-orange-500 py-1 px-3 text-sm font-medium text-white hover:bg-orange-600">
               Problem Script
             </button>
-            <button
+            {/* <button
               className={`rounded-md bg-green-600 py-1 px-3 text-sm font-medium text-white hover:bg-green-700 ${saving ? 'opacity-75' : ''}`}
               onClick={handleSave}
               disabled={saving}
@@ -627,7 +717,7 @@ useEffect(() => {
                   Save
                 </>
               )}
-            </button>
+            </button> */}
             <button
               className={`rounded-md bg-red-600 py-1 px-3 text-sm font-medium text-white hover:bg-red-700 ${submitting ? 'opacity-75' : ''}`}
               onClick={handleSubmit}
@@ -817,172 +907,167 @@ useEffect(() => {
             </div>
           </div>
 
-          <div className="rounded-lg border bg-white shadow-sm lg:col-span-3">
-            <div className="p-0">
-              <div className="relative">
-                <div className="flex items-center justify-center bg-gray-100 p-2">
-                  <div
-                    ref={pdfContainerRef}
-                    style={{
-                      width: `${(800 * zoom) / 100}px`,
-                      height: `${(1100 * zoom) / 100}px`,
-                      position: 'relative',
-                      overflow: "auto",
-                      border: '1px solid #ccc',
-                      backgroundColor: 'white'
-                    }}
-                  >
-                    {pdfUrl && (
-                      <Document
-                        file={pdfUrl}
-                        onLoadSuccess={onDocumentLoadSuccess}
-                        loading={<div className="flex justify-center items-center h-full">Loading PDF...</div>}
-                        error={<div className="flex justify-center items-center h-full">Failed to load PDF</div>}
-                      >
-                        <Page
-                          pageNumber={currentPage}
-                          width={(800 * zoom) / 100}
-                          renderAnnotationLayer={false}
-                          renderTextLayer={false}
-                          onRenderSuccess={onPageRender}
-                        />
-                      </Document>
-                    )}
-                    
-                    <canvas
-                      ref={canvasRef}
-                      onMouseDown={startDrawing}
-                      onMouseMove={draw}
-                      onMouseUp={stopDrawing}
-                      onMouseLeave={stopDrawing}
-                      style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        height: '100%',
-                        cursor: 'crosshair',
-                        zIndex: 10,
-                        pointerEvents: 'all'
-                      }}
-                    />
-                  </div>
-                </div>
+          {/* render pdf and annotation */}
+          <div className="lg:col-span-3">
+  <div className="rounded-lg border bg-white shadow-sm">
+    <div className="p-4">
+      <div className="mb-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => changePage(currentPage - 1)}
+            disabled={currentPage <= 1}
+            className={`rounded bg-gray-200 p-1 ${
+              currentPage <= 1 ? "cursor-not-allowed opacity-50" : "hover:bg-gray-300"
+            }`}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <span className="text-sm">
+            Page <span className="font-bold">{currentPage}</span> of <span className="font-bold">{numPages || 1}</span>
+          </span>
+          <button
+            onClick={() => changePage(currentPage + 1)}
+            disabled={currentPage >= numPages}
+            className={`rounded bg-gray-200 p-1 ${
+              currentPage >= numPages ? "cursor-not-allowed opacity-50" : "hover:bg-gray-300"
+            }`}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
 
-                <div className="flex items-center justify-between border-t bg-blue-50 p-2">
-                  <div className="flex items-center gap-2">
-                    <button
-                      className="rounded-md border border-gray-300 p-2  hover:bg-gray-100"
-                      onClick={goToPreviousPage}
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                      </svg>
-                    </button>
-                    <span className="text-sm">
-                      {currentPage} of {totalPages}
-                    </span>
-                    <button className="rounded-md border border-gray-300 p-2 hover:bg-gray-100" onClick={goToNextPage}>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4 rotate-180"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                      </svg>
-                    </button>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <button className="rounded-md border border-gray-300 p-2 hover:bg-gray-100" onClick={handleZoomOut}>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7"
-                        />
-                      </svg>
-                    </button>
-                    <span className="text-sm">{zoom}%</span>
-                    <button className="rounded-md border border-gray-300 p-2 hover:bg-gray-100" onClick={handleZoomIn}>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                  <button 
-                    className="rounded-md border border-gray-300 p-2 hover:bg-gray-100"
-                    onClick={clearAnnotations}
-                    title="Clear annotations"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                      />
-                    </svg>
-                  </button>
-                    <div className="flex items-center gap-1">
-                      <button
-                        className={`rounded-md border p-2 hover:bg-gray-100 ${penColor === "#FF0000" ? "bg-gray-200" : ""}`}
-                        onClick={() => setPenColor("#FF0000")}
-                      >
-                        <div className="h-3 w-3 rounded-full bg-red-600"></div>
-                      </button>
-                      <button
-                        className={`rounded-md border p-2 hover:bg-gray-100 ${penColor === "#0000FF" ? "bg-gray-200" : ""}`}
-                        onClick={() => setPenColor("#0000FF")}
-                      >
-                        <div className="h-3 w-3 rounded-full bg-blue-600"></div>
-                      </button>
-                      <button
-                        className={`rounded-md border p-2 hover:bg-gray-100 ${penColor === "#000000" ? "bg-gray-200" : ""}`}
-                        onClick={() => setPenColor("#000000")}
-                      >
-                        <div className="h-3 w-3 rounded-full bg-black"></div>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-sm">Zoom:</span>
+            <select
+              value={zoom}
+              onChange={(e) => changeZoom(parseInt(e.target.value))}
+              className="rounded border border-gray-300 p-1 text-sm"
+            >
+              <option value="50">50%</option>
+              <option value="75">75%</option>
+              <option value="100">100%</option>
+              <option value="125">125%</option>
+              <option value="150">150%</option>
+              <option value="200">200%</option>
+            </select>
           </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleDrawingMode}
+              className={`rounded p-1 ${
+                isDrawing ? "bg-blue-600 text-white" : "bg-gray-200 hover:bg-gray-300"
+              }`}
+              title={isDrawing ? "Exit drawing mode" : "Enter drawing mode"}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                />
+              </svg>
+            </button>
+            
+            {isDrawing && (
+              <>
+                <input
+                  type="color"
+                  value={penColor}
+                  onChange={(e) => setPenColor(e.target.value)}
+                  title="Select pen color"
+                  className="h-8 w-8 cursor-pointer rounded border border-gray-300"
+                />
+                <select
+                  value={penSize}
+                  onChange={(e) => setPenSize(parseInt(e.target.value))}
+                  className="rounded border border-gray-300 p-1 text-sm"
+                  title="Select pen size"
+                >
+                  <option value="1">Thin</option>
+                  <option value="3">Medium</option>
+                  <option value="5">Thick</option>
+                  <option value="8">Extra Thick</option>
+                </select>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* PDF Viewer with Canvas Overlay */}
+      <div
+        ref={pdfContainerRef}
+        className="relative mt-4 flex justify-center overflow-auto"
+        style={{ height: "calc(100vh - 300px)" }}
+      >
+        {pdfUrl ? (
+          <>
+            <Document
+              file={pdfUrl}
+              onLoadSuccess={onDocumentLoadSuccess}
+              loading={<div className="flex h-full w-full items-center justify-center">Loading PDF...</div>}
+              error={<div className="text-red-500">Failed to load PDF</div>}
+            >
+              <Page
+                pageNumber={currentPage}
+                scale={zoom / 100}
+                renderAnnotationLayer={false}
+                renderTextLayer={false}
+                loading={<div className="flex h-full w-full items-center justify-center">Loading page...</div>}
+              />
+            </Document>
+            
+            {/* Canvas overlay for annotations */}
+            <canvas
+              ref={canvasRef}
+              className={`absolute top-0 left-0 h-full w-full ${isDrawing ? 'cursor-crosshair' : ''}`}
+              onMouseDown={startDrawing}
+              onMouseMove={draw}
+              onMouseUp={stopDrawing}
+              onMouseLeave={stopDrawing}
+            />
+          </>
+        ) : (
+          <div className="flex h-full w-full items-center justify-center">No PDF available</div>
+        )}
+      </div>
+
+      {isDrawing && (
+        <div className="mt-2 rounded-md bg-yellow-100 p-2 text-sm text-yellow-800">
+          <p>
+            <strong>Drawing Mode Active:</strong> You can draw directly on the PDF. Click the pen button again to exit
+            drawing mode.
+          </p>
+        </div>
+      )}
+    </div>
+  </div>
+</div>
         </div>
       </main>
     </div>

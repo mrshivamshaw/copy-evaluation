@@ -26,6 +26,8 @@ export default function SubjectSubmissionsPage() {
         setSubject(currentSubject);
       }
     }
+    console.log(subject);
+    
     // Remove 'subject' from dependency array to prevent infinite loop
   }, [assignedSubjectList, id, dispatch]);
 
@@ -160,7 +162,7 @@ export default function SubjectSubmissionsPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {sub?.evaluated !== "pending" ? `${sub?.evaluated?.totalMarks}/100` : "-"}
+                      {sub?.evaluated !== "pending" ? `${sub?.studentId?.evaluated?.totalMarks}/${sub?.studentId?.evaluated?.maxMarks}` : "-"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button

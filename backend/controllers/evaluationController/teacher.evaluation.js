@@ -1,6 +1,7 @@
 import Evaluation from "../../models/evaluation.js";
 import Submission from "../../models/submission.js";
 import mongoose from "mongoose";
+import { uploadPdf } from "../../utils/pdfUploader.js";
 
 // Get evaluation details by submission ID
 export const getEvaluationBySubmissionId = async (req, res) => {
@@ -106,21 +107,25 @@ const formatQuestionsToSections = (questions) => {
 
 // Helper function to convert frontend section format to database question format
 const formatSectionsToQuestions = (sections) => {
-  const questions = [];
-  
-  sections.forEach(section => {
-    section.questions.forEach(q => {
-      questions.push({
-        questionNum: parseFloat(q.id),
-        marks: q.notAttempted ? 0 : Number(q.marks) || 0,
-        maxMarks: Number(q.maxMarks) || 1,
-        isAttempted: !q.notAttempted
-      });
-    });
-  });
-  
-  return questions;
+  if (!Array.isArray(sections)) {
+    try {
+      sections = JSON.parse(sections);
+    } catch (e) {
+      console.error("Invalid sections data:", sections);
+      return []; // Return an empty array to prevent crashes
+    }
+  }
+
+  return sections.flatMap(section =>
+    section.questions.map(q => ({
+      questionNum: parseFloat(q.id),
+      marks: q.notAttempted ? 0 : Number(q.marks) || 0,
+      maxMarks: Number(q.maxMarks) || 1,
+      isAttempted: !q.notAttempted
+    }))
+  );
 };
+
 
 // Save evaluation (partial save)
 export const saveEvaluation = async (req, res) => {
@@ -189,6 +194,11 @@ export const submitEvaluation = async (req, res) => {
   try {
     const { id } = req.params; // submissionId
     const { sections, totalMarks, maxMarks } = req.body;
+    // console.log(req.body);
+    
+    const pdfFile = req.files.pdf;
+    // console.log(req.files.pdf);
+    
     const teacherId = req.user.id; // Assuming authentication middleware sets req.user
     
     // Validate submission ID
@@ -201,7 +211,9 @@ export const submitEvaluation = async (req, res) => {
     if (!submission) {
       return res.status(404).json({ message: "Submission not found" });
     }
-    
+    const result = await uploadPdf(pdfFile);
+    submission.pdfLink = result.secure_url;
+    await submission.save();
     // Convert sections to questions format for database
     const questions = formatSectionsToQuestions(sections);
     
