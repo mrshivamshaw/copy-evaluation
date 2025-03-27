@@ -137,8 +137,10 @@ export const login = async (req,res) =>{
 
             //create cookie and then send response
             const options = {
-                expires : new Date(Date.now() + 3*24*60*60*1000),
-                httpOnly:true
+                maxAge: 24 * 60 * 60 * 1000,
+                httpOnly:true,
+                secure: process.env.NODE_ENV === 'production', // Only secure in production
+                sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
             }
 
             //send cookie
