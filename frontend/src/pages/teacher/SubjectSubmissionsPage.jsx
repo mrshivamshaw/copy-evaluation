@@ -26,7 +26,7 @@ export default function SubjectSubmissionsPage() {
         setSubject(currentSubject);
       }
     }
-    console.log(subject);
+    // console.log(subject);
     
     // Remove 'subject' from dependency array to prevent infinite loop
   }, [assignedSubjectList, id, dispatch]);

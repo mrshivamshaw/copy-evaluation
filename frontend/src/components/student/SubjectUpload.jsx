@@ -36,7 +36,7 @@ export default function SubjectUpload({ subject }) {
         setIsUploading(false)
         setSelectedFile(null)
         setIsSubmitted(true)
-        console.log(res);
+        // console.log(res);
         
       }
     } catch (error) {

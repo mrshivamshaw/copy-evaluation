@@ -6,41 +6,41 @@ import toast from "react-hot-toast"
 import { studentEndpoints } from "../../servies/api"
 
 // Mock data for student scores
-const mockScores = [
-  {
-    id: "1",
-    code: "PCC-CS404",
-    name: "Design and Analysis of Algorithm",
-    semester: "4",
-    score: 85,
-    maxScore: 100,
-    evaluatedAt: "2025-03-01T14:30:00Z",
-    feedback: "Good understanding of algorithms. Work on time complexity analysis.",
-  },
-  {
-    id: "2",
-    code: "PCC-CS405",
-    name: "Operating Systems",
-    semester: "4",
-    score: 78,
-    maxScore: 100,
-    evaluatedAt: "2025-03-02T10:15:00Z",
-    feedback: "Decent work on process management concepts. Need improvement in memory management.",
-  },
-  {
-    id: "3",
-    code: "PCC-CS406",
-    name: "Database Management Systems",
-    semester: "4",
-    score: 92,
-    maxScore: 100,
-    evaluatedAt: "2025-03-03T16:45:00Z",
-    feedback: "Excellent work on SQL queries and normalization concepts.",
-  },
-]
+// const mockScores = [
+//   {
+//     id: "1",
+//     code: "PCC-CS404",
+//     name: "Design and Analysis of Algorithm",
+//     semester: "4",
+//     score: 85,
+//     maxScore: 100,
+//     evaluatedAt: "2025-03-01T14:30:00Z",
+//     feedback: "Good understanding of algorithms. Work on time complexity analysis.",
+//   },
+//   {
+//     id: "2",
+//     code: "PCC-CS405",
+//     name: "Operating Systems",
+//     semester: "4",
+//     score: 78,
+//     maxScore: 100,
+//     evaluatedAt: "2025-03-02T10:15:00Z",
+//     feedback: "Decent work on process management concepts. Need improvement in memory management.",
+//   },
+//   {
+//     id: "3",
+//     code: "PCC-CS406",
+//     name: "Database Management Systems",
+//     semester: "4",
+//     score: 92,
+//     maxScore: 100,
+//     evaluatedAt: "2025-03-03T16:45:00Z",
+//     feedback: "Excellent work on SQL queries and normalization concepts.",
+//   },
+// ]
 
 export default function StudentScores() {
-  const [scores,setScores] = useState(mockScores)
+  const [scores,setScores] = useState([])
   const [expandedFeedback, setExpandedFeedback] = useState(null)
 
 
@@ -48,7 +48,7 @@ export default function StudentScores() {
     const fetchScores = async () => {
       try {
         const res = await apiConneector("get", studentEndpoints?.getScores)
-        console.log(res?.data?.scores)
+        // console.log(res?.data?.scores)
         setScores(res?.data?.scores)
       } catch (error) {
         console.log(error);
@@ -154,35 +154,50 @@ export default function StudentScores() {
                 </React.Fragment>
               ))}
             </tbody>
+            {
+              scores.length === 0 && (
+                <tbody>
+                  <tr>
+                    <td colSpan={5} className="px-6 py-4 text-sm text-gray-700">
+                      No scores found
+                    </td>
+                  </tr>
+                </tbody>
+              )
+            }
           </table>
         </div>
       </div>
 
-      <div className="rounded-lg border bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold mb-4">Performance Summary</h2>
+      {
+        scores.length > 0 && (
+          <div className="rounded-lg border bg-white p-6 shadow-sm">
+            <h2 className="text-lg font-semibold mb-4">Performance Summary</h2>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <div className="rounded-lg border p-4 bg-blue-50">
-            <div className="text-sm text-gray-500 mb-1">Average Score</div>
-            <div className="text-2xl font-bold text-blue-700">
-              {(scores.reduce((sum, score) => sum + score?.totalMarks, 0) / scores.length).toFixed(1)}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="rounded-lg border p-4 bg-blue-50">
+                <div className="text-sm text-gray-500 mb-1">Average Score</div>
+                <div className="text-2xl font-bold text-blue-700">
+                  {(scores.reduce((sum, score) => sum + score?.totalMarks, 0) / scores.length).toFixed(1)}
+                </div>
+              </div>
+
+              <div className="rounded-lg border p-4 bg-green-50">
+                <div className="text-sm text-gray-500 mb-1">Highest Score</div>
+                <div className="text-2xl font-bold text-green-700">{Math.max(...scores.map((score) => score?.totalMarks))}</div>
+                <div className="text-xs text-gray-500 mt-1">
+                  {scores.find((score) => score?.totalMarks === Math.max(...scores.map((s) => s?.totalMarks)))?.submissionId?.subjectId?.name}
+                </div>
+              </div>
+
+              <div className="rounded-lg border p-4 bg-purple-50">
+                <div className="text-sm text-gray-500 mb-1">Total Subjects Evaluated</div>
+                <div className="text-2xl font-bold text-purple-700">{scores.length}</div>
+              </div>
             </div>
           </div>
-
-          <div className="rounded-lg border p-4 bg-green-50">
-            <div className="text-sm text-gray-500 mb-1">Highest Score</div>
-            <div className="text-2xl font-bold text-green-700">{Math.max(...scores.map((score) => score?.totalMarks))}</div>
-            <div className="text-xs text-gray-500 mt-1">
-              {scores.find((score) => score?.totalMarks === Math.max(...scores.map((s) => s?.totalMarks)))?.submissionId?.subjectId?.name}
-            </div>
-          </div>
-
-          <div className="rounded-lg border p-4 bg-purple-50">
-            <div className="text-sm text-gray-500 mb-1">Total Subjects Evaluated</div>
-            <div className="text-2xl font-bold text-purple-700">{scores.length}</div>
-          </div>
-        </div>
-      </div>
+        )
+      }
     </div>
   )
 }

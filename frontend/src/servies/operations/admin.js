@@ -80,7 +80,7 @@ export const assignSubject = (data) => {
 };
 
 export const unassignSubject = (data) => {
-  console.log(data);
+  // console.log(data);
   
   return async (dispatch) => {
     dispatch(setLoading(true));

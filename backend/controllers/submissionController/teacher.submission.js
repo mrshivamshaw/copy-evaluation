@@ -59,7 +59,7 @@ export const fetchAssignedSubject = async(req,res) => {
         );
         
 
-        console.log(allSubject);
+        // console.log(allSubject);
         
         
         return res.status(200).json({
