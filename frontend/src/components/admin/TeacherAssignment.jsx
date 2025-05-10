@@ -2,10 +2,13 @@ import { useEffect, useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { getAssignedSubjectList, assignSubject, unassignSubject } from "../../servies/operations/admin"
 import toast from "react-hot-toast"
+import { apiConneector } from "../../servies/apiConnector"
+import { adminEndpoints } from "../../servies/api"
 
 export default function TeacherAssignment({ subjects }) {
   const [teacherEmail, setTeacherEmail] = useState("")
   const [selectedSubject, setSelectedSubject] = useState("")
+  const [suggestions, setSuggestions] = useState([])
   const { assignedSubjectList, loading } = useSelector((state) => ({
     assignedSubjectList: state.admin.assignedSubjectList || [], // Default to empty array if null/undefined
     loading: state.ui.loading, // Assuming UIslice has a loading state
@@ -15,6 +18,32 @@ export default function TeacherAssignment({ subjects }) {
   useEffect(() => {
     dispatch(getAssignedSubjectList())
   }, [dispatch])
+
+  
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      if (teacherEmail.length === 0) {
+        setSuggestions([]);
+        return;
+      }
+
+      const res = await apiConneector('post',adminEndpoints.getTeacherEmailSuggestion, {
+        query: teacherEmail,
+      });
+      if (res.status !== 200) {
+        toast.error("Failed to fetch suggestions");
+        return;
+      }
+      // console.log("Suggestions:", res?.data?.data);
+      
+      setSuggestions(res?.data?.data);
+    };
+
+    const timeoutId = setTimeout(fetchSuggestions, 300); // debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [teacherEmail]);
+
 
   const handleAssignSubject = async() => {
     if (!teacherEmail || !selectedSubject) {
@@ -65,6 +94,19 @@ export default function TeacherAssignment({ subjects }) {
               onChange={(e) => setTeacherEmail(e.target.value)}
               placeholder="teacher@example.com"
             />
+            {suggestions?.length > 0 ? (
+              <ul className="mt-1 w-full orounded-md bg-white shadow-lg">
+                {suggestions?.map((suggestion) => (
+                  <li
+                    key={suggestion}
+                    className="cursor-pointer px-4 py-2 text-sm text-gray-700 hover:bg-blue-100"
+                    onClick={() => setTeacherEmail(suggestion?.email)}
+                  >
+                    {suggestion?.email}
+                  </li>
+                ))}
+              </ul>
+            ) : <div className="w-full text-center text-gray-700 border"> No sugestions</div>}
           </div>
           <div className="space-y-2">
             <label htmlFor="subject" className="block text-sm font-medium text-gray-700">

@@ -148,7 +148,7 @@ export default function SubjectUpload({ subject }) {
           className={`w-full rounded-md py-2 px-4 text-sm font-medium ${
             isUploading || (!selectedFile && !isSubmitted)
               ? "cursor-not-allowed bg-gray-300 text-gray-500"
-              : "bg-blue-700 text-white hover:bg-blue-800"
+              : "bg-blue-700 text-white "
           }`}
           disabled={isUploading || (!selectedFile && !isSubmitted)}
           onClick={handleUpload}

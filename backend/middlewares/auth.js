@@ -66,6 +66,8 @@ export const checkToken = async (req, res) => {
         // Verify the token
         try {
             const decode = jwt.verify(token, process.env.JWT_SECRET);
+            console.log(decode);
+            
             return res.status(200).json({
                 success: true,
                 message: "Token is valid",
@@ -136,7 +138,9 @@ export const isTeacher = async (req,res,next) => {
 export const isAdmin = async (req,res,next) => {
     try {
         const userId = req.user.id;
-        const userType = await user.findById(userId,'accountType');        
+        const userType = await user.findById(userId,'accountType');    
+        // console.log(req.body);
+            
 
         if(userType?.accountType !== "admin"){
             return res.status(400).json({

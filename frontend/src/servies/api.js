@@ -1,7 +1,7 @@
 import { getSubjectList } from "./operations/admin";
 
-// const BASE_URL = "http://localhost:3000/api/v1";
-const BASE_URL = "https://copy-evaluation.onrender.com/api/v1";
+const BASE_URL = "http://localhost:3000/api/v1";
+// const BASE_URL = "https://copy-evaluation.onrender.com/api/v1";
 
 //authentication endpoints
 export const authEndPoints = {
@@ -29,6 +29,7 @@ export const adminEndpoints = {
     getAssignedSubject : `${BASE_URL}/admin/assign-subject`,
     assignSubject : `${BASE_URL}/admin/assign-subject`,
     deleteAssignSubject : `${BASE_URL}/admin/delete-assign-subject`,
+    getTeacherEmailSuggestion : `${BASE_URL}/admin/get-emails`,
 }
 
 //teacher endpoints

@@ -688,9 +688,9 @@ const handleSave = async () => {
               </svg>
               Download Answer Script
             </a>
-            <button className="rounded-md bg-orange-500 py-1 px-3 text-sm font-medium text-white hover:bg-orange-600">
+            {/* <button className="rounded-md bg-orange-500 py-1 px-3 text-sm font-medium text-white hover:bg-orange-600">
               Problem Script
-            </button>
+            </button> */}
             {/* <button
               className={`rounded-md bg-green-600 py-1 px-3 text-sm font-medium text-white hover:bg-green-700 ${saving ? 'opacity-75' : ''}`}
               onClick={handleSave}

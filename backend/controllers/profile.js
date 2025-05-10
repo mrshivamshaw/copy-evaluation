@@ -25,23 +25,34 @@ export const updateProfile = async  (req,res)  =>  {
 
         userDetails.firstName = firstName
         userDetails.lastName = lastName
-        userDetails.contactNumber = contactNumber
         userDetails.email = email
 
         await userDetails.save()
 
+        
+        
         const profileId = userDetails.additionalDetails
-
+        
         //find profile
-        const profile = await Profile.findById(profileId)
+        let profile = await Profile.findById(profileId)
+        if(!profile){
+            profile = await Profile.create({
+                studentId: id,
+                semester: semester,
+                department: department,
+                contactNumber: contactNumber
+            })
+        }
+        else{
+            //update profile
+            profile.semester = semester
+            profile.department = department
+            profile.contactNumber = contactNumber
+            await profile.save()
+        }
+        // console.log(userDetails);
 
-        //update profile
-        profile.semester = semester
-        profile.department = department
-
-        await profile.save()
-
-        const userData = await user.findById(id).populate("additionalDetails")
+        const userData = await user.findById(id).populate("additionalDetails");
         userData.password = undefined
         
 
@@ -55,7 +66,7 @@ export const updateProfile = async  (req,res)  =>  {
     } catch (error) {
         console.log(error.message);
         return res.status(500).json({
-            success:fale,
+            success:false,
             message:"profile updated Unsuccessfully",
         })
     }

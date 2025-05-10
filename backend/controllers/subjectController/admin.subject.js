@@ -312,3 +312,38 @@ export const removeAssignedTecher = async(req,res) => {
         })
     }
 }
+
+
+//get teacher email suggestion
+export const suggestTeacherEmail = async(req,res) => {
+    try {
+        const {query} = req.body;
+
+        if(!query){
+            return res.status(400).json({
+                message : "Query required",
+                success : false
+            })
+        }
+        // console.log(query);
+        
+        //add condition that it will retrive the email of teachers only
+        const suggestions = await User.find({
+            email: { $regex: `^${query}`, $options: 'i' },
+            accountType: "teacher" // Ensure only teachers are fetched
+          }).limit(5); // Limit to top 5 suggestions
+        
+        console.log(suggestions);
+        return res.status(200).json({
+            message : "Suggestions fetched successfully",
+            success : true,
+            data : suggestions
+        })
+    } catch (error) {
+        console.log("Error while removing Assigned Teacher : ",error);
+        return res.status(400).json({
+            success:false,
+            message:"Error while removing Assigned Teacher",
+        })
+    }
+}

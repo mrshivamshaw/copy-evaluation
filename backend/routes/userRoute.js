@@ -43,7 +43,7 @@ userRoute.post('/updateProfile',auth,updateProfile)
 userRoute.post('/updatePic',auth,async(req,res)=>{
     try {
         const {image} = req.files
-            const userId = req.body.id
+            const userId = req.user.id
         if(!image){
             return res.status(500).json({
                 message : "Please upload an image",
@@ -58,6 +58,14 @@ userRoute.post('/updatePic',auth,async(req,res)=>{
         }
         const secureUrl = await uploadImageToCloudinary(image,process.env.FOLDER_NAME)
         const updatedUser = await user.findByIdAndUpdate(userId,{image : secureUrl.secure_url},{new : true})
+        if(!updatedUser){
+            return res.status(500).json({
+                message : "Something went wrong",
+                success : false
+            })
+        }
+        updatedUser.password = undefined
+        updatedUser.__v = undefined
         return res.status(200).json({
             image : secureUrl.secure_url,
             success : true,

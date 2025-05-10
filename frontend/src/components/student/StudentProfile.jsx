@@ -3,6 +3,11 @@
 import { useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { updateProfileDetail } from "../../servies/operations/student"
+import { RiImageEditFill } from "react-icons/ri";
+import { profileEndPoints } from "../../servies/api"
+import { apiConneector } from "../../servies/apiConnector"
+import toast from "react-hot-toast";
+import { setUser } from "../../slices/profileSlice";
 
 export default function StudentProfile() {
   // const [profile, setProfile] = useState({
@@ -25,6 +30,12 @@ export default function StudentProfile() {
     phone: user?.additionalDetails?.contactNumber || "+1234567890",
   })
 
+  const [imageFile, setImageFile] = useState(null)
+  const handleImageChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setImageFile(e.target.files[0])
+    }
+  }
   const handleChange = (field, value) => {
     setProfile({ ...profile, [field]: value })
   }
@@ -36,17 +47,32 @@ export default function StudentProfile() {
     
   }
 
+  const updatePic = async() => {
+    const formData = new FormData();
+    formData.append("image", imageFile);
+    const res = await apiConneector("post", profileEndPoints.updatePic, formData);
+    if(res?.data?.success){
+      toast.success(res?.data?.message);
+      dispatch(setUser(res?.data?.user));
+    }
+    else{
+      toast.error(res?.data?.message);
+    }
+  }
+
   return (
     <div className="rounded-lg border bg-white p-6 shadow-sm">
       <h2 className="text-lg font-semibold">My Profile</h2>
       <p className="mb-4 text-sm text-gray-600">Update your personal information</p>
 
       <div className="flex flex-col items-center space-y-4 md:flex-row md:items-start md:space-x-4 md:space-y-0">
-        <div className="flex flex-col items-center space-y-2">
-          <div className="h-24 w-24 overflow-hidden rounded-full bg-gray-200">
-            <img src={user?.image} alt={profile.name} className="h-full w-full object-cover" />
+        <div className="flex flex-col items-center space-y-2 ">
+          <div className="h-24 w-24 relative z-10">
+            <img src={imageFile ? URL.createObjectURL(imageFile) : user?.image} alt={profile.name} className="h-full w-full rounded-full object-cover" />
+            <button className="text-blue-500 text-2xl z-20 absolute bottom-0 right-3"><RiImageEditFill /></button>
+            <input type="file" accept="image/*" onChange={handleImageChange} className="opacity-0 cursor-pointer absolute bottom-0 right-3 z-30" />
           </div>
-          <button className="rounded-md border border-gray-300 py-1 px-3 text-sm text-gray-700 hover:bg-gray-100">
+          <button onClick={updatePic} className="rounded-md border border-gray-300 py-1 px-3 text-sm text-gray-700 hover:bg-gray-100">
             Change Photo
           </button>
         </div>
