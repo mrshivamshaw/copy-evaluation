@@ -80,9 +80,9 @@ export default function StudentDashboard() {
 
         {activeTab === "subjects" && (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {subjects.map((subject, i) => (
+            {subjects?.length > 0 ? subjects.map((subject, i) => (
               <SubjectUpload key={i} subject={subject} />
-            ))}
+            )) : "No subjects"}
           </div>
         )}
 

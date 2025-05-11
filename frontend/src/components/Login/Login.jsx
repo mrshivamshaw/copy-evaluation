@@ -40,9 +40,9 @@ const Login = () => {
           <div>
             <form onSubmit={formSubmitHandler} className="flex flex-col gap-[3vh]">
               <div className="flex flex-col">
-              {isEmailFocused && <label htmlFor="email" className="text-black font-medium ">
+              <label htmlFor="email" className="text-black font-medium ">
                   Email
-                </label>}
+                </label>
                 <input
                   type="email"
                   id="email"
@@ -59,9 +59,9 @@ const Login = () => {
                 />
               </div>
               <div className="flex flex-col">
-                { isPasswordFocused && <label htmlFor="pass" className="text-black font-medium ">
+                <label htmlFor="pass" className="text-black font-medium ">
                   Password
-                </label>}
+                </label>
                 <input
                   type="password"
                   id="pass"
