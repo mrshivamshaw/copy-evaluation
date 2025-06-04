@@ -125,7 +125,7 @@ export default function StudentScores() {
             </thead>
             <tbody className="divide-y divide-gray-200 bg-white">
               {scores.map((score) => (
-                <React.Fragment key={score.id}>
+                <React.Fragment key={score._id}>
                   <tr className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{score?.submissionId?.subjectId?.name}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{score?.submissionId?.subjectId?.code}</td>

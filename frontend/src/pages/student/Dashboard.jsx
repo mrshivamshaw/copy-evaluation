@@ -33,7 +33,7 @@ export default function StudentDashboard() {
     };
 
     fetchSubjects();
-  }, [])
+  }, [subjects.length])
 
   return (
     <div className="min-h-screen bg-gray-50">

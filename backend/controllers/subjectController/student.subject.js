@@ -42,7 +42,7 @@ export const fetchSubject = async(req,res) => {
         }
 
         return res.status(200).json({
-            data : allSubject.length == 1 ? allSubject[0] : allSubject,
+            data : allSubject.length == 1 ? [allSubject[0]] : allSubject,
             message: "Subjects fetched successfully",
             success : true
         })
