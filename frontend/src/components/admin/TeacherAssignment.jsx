@@ -59,7 +59,7 @@ export default function TeacherAssignment({ subjects }) {
       if (result === true) {
         setSelectedSubject("")
         setTeacherEmail("")
-        toast.success("Subject assigned successfully");
+        // toast.success("Subject assigned successfully");
       }
     } catch (error) {
       console.error("Failed to assign subject:", error);
