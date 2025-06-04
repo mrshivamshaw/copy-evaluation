@@ -131,7 +131,7 @@ export const assignTeacherToSubject = async(req,res) => {
             })
         }
 
-        const teacherDetails = await User.findOne({email:email});
+        const teacherDetails = await User.findOne({email:email,accountType:"teacher"});
 
         if(!teacherDetails){
             return res.status(404).json({
@@ -155,7 +155,7 @@ export const assignTeacherToSubject = async(req,res) => {
         // Push teacher's ObjectId into teacherAssigned array
         const result =await Subject.findByIdAndUpdate(
             id,
-            { $push: { teacherAssigned: req.user.id } }, // Ensures unique entries
+            { $push: { teacherAssigned: teacherDetails?._id } }, // Ensures unique entries
             { new: true }
         )
         
@@ -333,7 +333,7 @@ export const suggestTeacherEmail = async(req,res) => {
             accountType: "teacher" // Ensure only teachers are fetched
           }).limit(5); // Limit to top 5 suggestions
         
-        console.log(suggestions);
+        // console.log(suggestions);
         return res.status(200).json({
             message : "Suggestions fetched successfully",
             success : true,
