@@ -1,7 +1,6 @@
 import { getSubjectList } from "./operations/admin";
 
-const BASE_URL = "http://localhost:3000/api/v1";
-// const BASE_URL = "https://copy-evaluation.onrender.com/api/v1";
+const BASE_URL = process.env.MODE === "development" ? "http://localhost:5000/api/v1" : "https://copy-evaluation.onrender.com/api/v1";
 
 //authentication endpoints
 export const authEndPoints = {
