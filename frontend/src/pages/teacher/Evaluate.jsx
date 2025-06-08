@@ -746,9 +746,9 @@ export default function EvaluatePage() {
           </div>
         </div>
 
-        <p className="mb-4 rounded-lg bg-blue-700 p-2 text-center text-white">
+        {/* <p className="mb-4 rounded-lg bg-blue-700 p-2 text-center text-white">
           Please click on the Save button for partial saving of the evaluation of the current script
-        </p>
+        </p> */}
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
           <div className="rounded-lg border bg-white shadow-sm lg:col-span-1">
