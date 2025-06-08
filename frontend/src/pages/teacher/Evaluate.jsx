@@ -309,30 +309,15 @@ export default function EvaluatePage() {
     const context = canvas.getContext("2d");
 
     // Set canvas to be responsive to page dimensions
-    if (pdfContainerRef.current) {
-      const containerRect = pdfContainerRef.current.getBoundingClientRect();
-      canvas.width = containerRect.width;
-      canvas.height = containerRect.height;
-    }
-
-    context.lineCap = "round";
-    context.strokeStyle = penColor;
-    context.lineWidth = penSize;
-    contextRef.current = context;
-
-    // Draw any saved annotations for this page
-    drawSavedAnnotations();
-  }, [canvasRef, currentPage, penColor, penSize, zoom]);
-
-  // Initialize the canvas for drawing
-  useEffect(() => {
-    if (!canvasRef.current) return;
-
-    const canvas = canvasRef.current;
-    const context = canvas.getContext("2d");
-
-    // Set canvas to be responsive to page dimensions
-    if (pdfContainerRef.current) {
+    const pdfElement = pdfContainerRef.current?.querySelector('.react-pdf__Page');
+    if (pdfElement) {
+      const pdfRect = pdfElement.getBoundingClientRect();
+      canvas.width = pdfRect.width;
+      canvas.height = pdfRect.height;
+      canvas.style.width = `${pdfRect.width}px`;
+      canvas.style.height = `${pdfRect.height}px`;
+    } else if (pdfContainerRef.current) {
+      // Fallback to container dimensions
       const containerRect = pdfContainerRef.current.getBoundingClientRect();
       canvas.width = containerRect.width;
       canvas.height = containerRect.height;
@@ -1077,17 +1062,17 @@ export default function EvaluatePage() {
                           renderTextLayer={false}
                           loading={<div className="flex h-full w-full items-center justify-center">Loading page...</div>}
                         />
-                      </Document>
 
                       {/* Canvas overlay for annotations */}
                       <canvas
                         ref={canvasRef}
-                        className={`absolute top-0 left-0 h-full w-full ${isDrawing ? 'cursor-crosshair' : ''}`}
+                        className={`absolute top-0 ${isDrawing ? 'cursor-crosshair' : ''}`}
                         onMouseDown={startDrawing}
                         onMouseMove={draw}
                         onMouseUp={stopDrawing}
                         onMouseLeave={stopDrawing}
-                      />
+                        />
+                        </Document>
                     </>
                   ) : (
                     <div className="flex h-full w-full items-center justify-center">No PDF available</div>
